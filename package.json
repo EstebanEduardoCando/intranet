@@ -1,0 +1,9 @@
+{
+  "name": "intranet-react",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "echo \"Define your dev server command (e.g., vite)\"",
+    "test": "echo \"No tests configured\""
+  }
+}
