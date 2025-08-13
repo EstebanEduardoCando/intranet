@@ -16,8 +16,8 @@ src/
 ├── domain/         # Entidades y puertos del dominio
 ├── infrastructure/ # Adaptadores externos (API, BD, etc.)
 └── ui/             # Componentes React
-public/
-└── index.html
+public/             # Assets estáticos
+index.html          # Punto de entrada
 ```
 
 ## Ejemplo
@@ -54,14 +54,23 @@ export class GetUser {
 npm install
 ```
 
+### Variables de entorno
+
+El archivo `.env` define la configuración del proyecto. Por defecto incluye:
+
+```bash
+PORT=8080
+```
+
+Este valor determina el puerto del servidor de desarrollo.
+
 ### Levantar el sistema
 
 ```bash
 npm start
 ```
 
-El comando anterior es un marcador de posición; añade tu herramienta preferida (Vite,
-Webpack, etc.) para obtener un servidor de desarrollo real.
+Este comando arranca el servidor de desarrollo de Vite.
 
 ### Ejecutar pruebas
 
@@ -82,4 +91,3 @@ npm install <nombre-del-paquete>
 - El código está escrito en TypeScript.
 - Sigue la estructura propuesta para mantener la separación entre dominio, aplicación,
   infraestructura y UI.
-
