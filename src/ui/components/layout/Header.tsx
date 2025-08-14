@@ -1,11 +1,39 @@
-import React from 'react';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import MenuIcon from '@mui/icons-material/Menu';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
+import React, { useState } from 'react';
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Badge,
+  Avatar,
+  Menu,
+  MenuItem,
+  Box,
+  Chip,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Select,
+  FormControl,
+  useTheme,
+  alpha
+} from '@mui/material';
+import {
+  Menu as MenuIcon,
+  Notifications as NotificationsIcon,
+  Email as EmailIcon,
+  Settings as SettingsIcon,
+  Person as PersonIcon,
+  ExitToApp as LogoutIcon,
+  Brightness4 as DarkModeIcon,
+  Brightness7 as LightModeIcon,
+  Language as LanguageIcon,
+  Search as SearchIcon,
+  Fullscreen as FullscreenIcon,
+  FullscreenExit as FullscreenExitIcon
+} from '@mui/icons-material';
 import { useThemeStore } from '../../store/useTheme';
+import { useAuthStore } from '../../store/useAuth';
 
 interface Props {
   onMenuClick: () => void;
@@ -13,27 +41,256 @@ interface Props {
 }
 
 const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
-  const toggleTheme = useThemeStore((state) => state.toggle);
+  const theme = useTheme();
+  const { mode, toggle: toggleTheme } = useThemeStore();
+  const { user, logout } = useAuthStore();
+  
+  const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(null);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
+  const [language, setLanguage] = useState('es');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
+    setProfileAnchorEl(event.currentTarget);
+  };
+
+  const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
+    setNotificationAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileClose = () => {
+    setProfileAnchorEl(null);
+  };
+
+  const handleNotificationClose = () => {
+    setNotificationAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    handleProfileClose();
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   return (
     <AppBar
-      position="static"
-      sx={{ width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` } }}
+      position="fixed"
+      elevation={1}
+      sx={{
+        width: { sm: `calc(100% - ${drawerWidth}px)` },
+        ml: { sm: `${drawerWidth}px` },
+        bgcolor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+        backdropFilter: 'blur(8px)',
+        zIndex: theme.zIndex.appBar
+      }}
     >
-      <Toolbar>
-        <IconButton
-          color="inherit"
-          edge="start"
-          onClick={onMenuClick}
-          sx={{ mr: 2, display: { sm: 'none' } }}
+      <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 } }}>
+        {/* Left Section - Menu & Search */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={onMenuClick}
+            sx={{ 
+              mr: 2, 
+              display: { sm: 'none' },
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+          
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+            <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Buscar en el sistema...
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Right Section - Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Language Selector */}
+          <FormControl size="small" sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              sx={{
+                minWidth: 80,
+                '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }
+              }}
+            >
+              <MenuItem value="es">
+                <LanguageIcon fontSize="small" sx={{ mr: 0.5 }} />
+                ES
+              </MenuItem>
+              <MenuItem value="en">
+                <LanguageIcon fontSize="small" sx={{ mr: 0.5 }} />
+                EN
+              </MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Fullscreen Toggle */}
+          <IconButton
+            onClick={toggleFullscreen}
+            sx={{
+              color: 'text.secondary',
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+            }}
+          >
+            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </IconButton>
+
+          {/* Theme Toggle */}
+          <IconButton
+            onClick={toggleTheme}
+            sx={{
+              color: 'text.secondary',
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+            }}
+          >
+            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
+
+          {/* Notifications */}
+          <IconButton
+            onClick={handleNotificationClick}
+            sx={{
+              color: 'text.secondary',
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+            }}
+          >
+            <Badge badgeContent={3} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+
+          {/* Messages */}
+          <IconButton
+            sx={{
+              color: 'text.secondary',
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+            }}
+          >
+            <Badge badgeContent={5} color="primary">
+              <EmailIcon />
+            </Badge>
+          </IconButton>
+
+          {/* User Profile */}
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+            <IconButton onClick={handleProfileClick} sx={{ p: 0 }}>
+              <Avatar
+                sx={{
+                  width: 36,
+                  height: 36,
+                  bgcolor: theme.palette.primary.main,
+                  fontSize: '0.875rem',
+                  fontWeight: 600
+                }}
+              >
+                {user?.name?.charAt(0) || 'U'}
+              </Avatar>
+            </IconButton>
+            <Box sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>
+              <Typography variant="subtitle2" sx={{ lineHeight: 1.2 }}>
+                {user?.name || 'Usuario'}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                En línea
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Profile Menu */}
+        <Menu
+          anchorEl={profileAnchorEl}
+          open={Boolean(profileAnchorEl)}
+          onClose={handleProfileClose}
+          PaperProps={{
+            sx: {
+              mt: 1,
+              minWidth: 200,
+              boxShadow: theme.shadows[8]
+            }
+          }}
         >
-          <MenuIcon />
-        </IconButton>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Intranet
-        </Typography>
-        <IconButton color="inherit" onClick={toggleTheme}>
-          <Brightness4Icon />
-        </IconButton>
+          <Box sx={{ px: 2, py: 1 }}>
+            <Typography variant="subtitle2">{user?.name || 'Usuario'}</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {user?.email || 'correo@ejemplo.com'}
+            </Typography>
+            <Chip label="Administrador" size="small" color="primary" sx={{ mt: 0.5 }} />
+          </Box>
+          <Divider />
+          <MenuItem onClick={handleProfileClose}>
+            <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Mi Perfil</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleProfileClose}>
+            <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Configuración</ListItemText>
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+            <ListItemIcon sx={{ color: 'inherit' }}>
+              <LogoutIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Cerrar Sesión</ListItemText>
+          </MenuItem>
+        </Menu>
+
+        {/* Notifications Menu */}
+        <Menu
+          anchorEl={notificationAnchorEl}
+          open={Boolean(notificationAnchorEl)}
+          onClose={handleNotificationClose}
+          PaperProps={{
+            sx: {
+              mt: 1,
+              maxWidth: 320,
+              boxShadow: theme.shadows[8]
+            }
+          }}
+        >
+          <Box sx={{ px: 2, py: 1 }}>
+            <Typography variant="subtitle2">Notificaciones</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Tienes 3 notificaciones nuevas
+            </Typography>
+          </Box>
+          <Divider />
+          <MenuItem>
+            <Box>
+              <Typography variant="body2">Nueva actualización disponible</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                hace 5 minutos
+              </Typography>
+            </Box>
+          </MenuItem>
+          <MenuItem>
+            <Box>
+              <Typography variant="body2">Sesión iniciada desde nuevo dispositivo</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                hace 1 hora
+              </Typography>
+            </Box>
+          </MenuItem>
+        </Menu>
       </Toolbar>
     </AppBar>
   );
