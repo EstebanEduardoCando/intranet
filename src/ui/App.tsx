@@ -7,6 +7,8 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Configuracion from './pages/Configuracion';
+import LandingRegistro from './pages/LandingRegistro';
+import Error404 from './pages/Error404';
 import NotFound from './pages/NotFound';
 import PrivateRoute from './routes/PrivateRoute';
 
@@ -21,6 +23,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/landing-registro" element={<LandingRegistro />} />
           <Route element={<Layout />}>
             <Route
               path="/dashboard"
@@ -39,8 +42,9 @@ const App: React.FC = () => {
               }
             />
           </Route>
+          <Route path="/error404" element={<Error404 />} />
           <Route path="/notFound" element={<NotFound />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Error404 />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

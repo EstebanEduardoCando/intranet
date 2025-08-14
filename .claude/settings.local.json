@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(claude mcp add puppeteer -s user:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm start)",
+      "Bash(node:*)",
+      "WebFetch(domain:mui.com)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "acceptEdits"
+  }
+}
