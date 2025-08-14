@@ -5,6 +5,7 @@ import { useThemeStore } from './store/useTheme';
 import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Configuracion from './pages/Configuracion';
 import LandingRegistro from './pages/LandingRegistro';
@@ -23,6 +24,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/landing-registro" element={<LandingRegistro />} />
           <Route element={<Layout />}>
             <Route

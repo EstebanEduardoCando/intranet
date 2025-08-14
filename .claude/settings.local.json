@@ -8,7 +8,15 @@
       "Bash(npm start)",
       "Bash(node:*)",
       "WebFetch(domain:mui.com)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(git checkout:*)",
+      "Bash(npx storybook@latest init:*)",
+      "Bash(npx create-docusaurus:*)",
+      "Bash(git add:*)",
+      "Bash(claude mcp:*)",
+      "Bash(npm run build:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": [],

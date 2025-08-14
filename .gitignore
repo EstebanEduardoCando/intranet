@@ -66,8 +66,12 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
+.env
 .env.*
-!.env
+.env.local
+.env.development
+.env.test
+.env.production
 !.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -142,5 +146,27 @@ vite.config.ts.timestamp-*
 .vscode/
 .idea/
 
+# Storybook
 *storybook.log
 storybook-static
+
+# Claude Code
+.claude/
+
+# Sensitive documentation (contains real credentials)
+SUPABASE_SETUP.md
+SUPABASE_CONFIG.md
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+*.swp
+*.swo
+*~

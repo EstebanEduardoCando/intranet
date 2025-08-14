@@ -15,27 +15,61 @@ import {
 import { useAuthStore } from '../store/useAuth';
 import { useNavigate } from 'react-router-dom';
 
-const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, isLoading, error, clearError } = useAuthStore();
+const Register: React.FC = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [validationError, setValidationError] = useState('');
+  
+  const { register, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    setValidationError('');
+    
+    // Validation
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      setValidationError('Todos los campos son obligatorios');
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setValidationError('Las contraseñas no coinciden');
+      return;
+    }
+    
+    if (formData.password.length < 8) {
+      setValidationError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
     
     try {
-      await login({ email, password });
+      await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password
+      });
       navigate('/dashboard');
     } catch (error) {
       // Error is handled by the store
     }
   };
 
+  const handleChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+    if (validationError) setValidationError('');
+  };
+
   const handleBackToLogin = () => {
-    // En una app real, esto navegaría a una página de login diferente
-    navigate('/');
+    navigate('/login');
   };
 
   const IllustrationComponent = () => (
@@ -58,12 +92,12 @@ const Login: React.FC = () => {
           position: 'absolute',
           width: '120px',
           height: '120px',
-          border: '3px solid #e2e8f0',
+          border: '3px solid #10b981',
           borderRadius: '20px',
           top: '20%',
           left: '15%',
           transform: 'rotate(15deg)',
-          opacity: 0.7
+          opacity: 0.3
         }}
       />
       <Box
@@ -71,12 +105,12 @@ const Login: React.FC = () => {
           position: 'absolute',
           width: '80px',
           height: '80px',
-          border: '3px solid #cbd5e0',
+          border: '3px solid #3b82f6',
           borderRadius: '15px',
           top: '60%',
           right: '20%',
           transform: 'rotate(-25deg)',
-          opacity: 0.6
+          opacity: 0.4
         }}
       />
       <Box
@@ -84,7 +118,7 @@ const Login: React.FC = () => {
           position: 'absolute',
           width: '60px',
           height: '60px',
-          border: '3px solid #a0aec0',
+          border: '3px solid #8b5cf6',
           borderRadius: '10px',
           top: '10%',
           right: '30%',
@@ -93,7 +127,7 @@ const Login: React.FC = () => {
         }}
       />
       
-      {/* Character illustration */}
+      {/* Welcome illustration */}
       <Box
         sx={{
           display: 'flex',
@@ -102,119 +136,28 @@ const Login: React.FC = () => {
           zIndex: 1
         }}
       >
-        {/* Head */}
+        {/* Welcome icon */}
         <Box
           sx={{
-            width: '80px',
-            height: '80px',
+            width: '100px',
+            height: '100px',
             borderRadius: '50%',
-            backgroundColor: '#fef2f2',
-            border: '3px solid #374151',
-            position: 'relative',
-            mb: 1
+            backgroundColor: '#10b981',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 2,
+            boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
           }}
         >
-          {/* Hair */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '-10px',
-              left: '15px',
-              right: '15px',
-              height: '40px',
-              backgroundColor: '#ef4444',
-              borderRadius: '50px 50px 20px 20px',
-              border: '3px solid #374151'
-            }}
-          />
-          {/* Face */}
-          <Box sx={{ position: 'absolute', top: '25px', left: '20px' }}>
-            <Box
-              sx={{
-                width: '8px',
-                height: '8px',
-                backgroundColor: '#374151',
-                borderRadius: '50%',
-                display: 'inline-block',
-                mr: '12px'
-              }}
-            />
-            <Box
-              sx={{
-                width: '8px',
-                height: '8px',
-                backgroundColor: '#374151',
-                borderRadius: '50%',
-                display: 'inline-block'
-              }}
-            />
-          </Box>
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '45px',
-              left: '35px',
-              width: '10px',
-              height: '6px',
-              border: '2px solid #374151',
-              borderTop: 'none',
-              borderRadius: '0 0 10px 10px'
-            }}
-          />
+          <Typography variant="h2" sx={{ color: 'white' }}>
+            👋
+          </Typography>
         </Box>
         
-        {/* Body */}
-        <Box
-          sx={{
-            width: '120px',
-            height: '140px',
-            backgroundColor: '#10b981',
-            border: '3px solid #374151',
-            borderRadius: '30px',
-            position: 'relative'
-          }}
-        >
-          {/* Arms */}
-          <Box
-            sx={{
-              position: 'absolute',
-              left: '-25px',
-              top: '20px',
-              width: '50px',
-              height: '15px',
-              backgroundColor: '#10b981',
-              border: '3px solid #374151',
-              borderRadius: '15px',
-              transform: 'rotate(-20deg)'
-            }}
-          />
-          <Box
-            sx={{
-              position: 'absolute',
-              right: '-25px',
-              top: '20px',
-              width: '50px',
-              height: '15px',
-              backgroundColor: '#10b981',
-              border: '3px solid #374151',
-              borderRadius: '15px',
-              transform: 'rotate(20deg)'
-            }}
-          />
-          {/* Hand gesture */}
-          <Box
-            sx={{
-              position: 'absolute',
-              right: '-45px',
-              top: '35px',
-              width: '20px',
-              height: '20px',
-              backgroundColor: '#fef2f2',
-              border: '3px solid #374151',
-              borderRadius: '50%'
-            }}
-          />
-        </Box>
+        <Typography variant="h5" sx={{ color: '#1e293b', fontWeight: 600, textAlign: 'center' }}>
+          ¡Únete a nuestro equipo!
+        </Typography>
       </Box>
     </Box>
   );
@@ -245,33 +188,29 @@ const Login: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 3 }}>
               <Link href="#" color="inherit" underline="none" sx={{ '&:hover': { color: '#60a5fa' } }}>
-                Landings
+                Inicio
               </Link>
               <Link href="#" color="inherit" underline="none" sx={{ '&:hover': { color: '#60a5fa' } }}>
-                Company
+                Sobre Nosotros
               </Link>
               <Link href="#" color="inherit" underline="none" sx={{ '&:hover': { color: '#60a5fa' } }}>
-                Account
-              </Link>
-              <Link href="#" color="inherit" underline="none" sx={{ '&:hover': { color: '#60a5fa' } }}>
-                Pages
-              </Link>
-              <Link href="#" color="inherit" underline="none" sx={{ '&:hover': { color: '#60a5fa' } }}>
-                Blog
-              </Link>
-              <Link href="#" color="inherit" underline="none" sx={{ '&:hover': { color: '#60a5fa' } }}>
-                Portfolio
+                Contacto
               </Link>
             </Box>
             <Button 
-              variant="contained" 
+              variant="outlined" 
+              onClick={() => navigate('/login')}
               sx={{ 
                 ml: 3,
-                backgroundColor: '#3b82f6',
-                '&:hover': { backgroundColor: '#2563eb' }
+                borderColor: 'white',
+                color: 'white',
+                '&:hover': { 
+                  borderColor: '#60a5fa',
+                  backgroundColor: 'rgba(96, 165, 250, 0.1)'
+                }
               }}
             >
-              Buy now
+              Iniciar Sesión
             </Button>
           </Toolbar>
         </Container>
@@ -293,7 +232,7 @@ const Login: React.FC = () => {
                   display: 'block'
                 }}
               >
-                LOGIN
+                CREAR CUENTA
               </Typography>
               
               <Typography 
@@ -306,7 +245,7 @@ const Login: React.FC = () => {
                   lineHeight: 1.2
                 }}
               >
-                Welcome back!
+                Regístrate hoy
               </Typography>
               
               <Typography 
@@ -317,12 +256,12 @@ const Login: React.FC = () => {
                   lineHeight: 1.6
                 }}
               >
-                Enter your credentials to access your account.
+                Completa el formulario para crear tu cuenta y acceder a todas las funcionalidades.
               </Typography>
 
-              {error && (
+              {(error || validationError) && (
                 <Alert severity="error" sx={{ mb: 3 }}>
-                  {error}
+                  {validationError || error}
                 </Alert>
               )}
 
@@ -335,15 +274,14 @@ const Login: React.FC = () => {
                     mb: 1
                   }}
                 >
-                  Email
+                  Nombre completo
                 </Typography>
                 
                 <TextField
                   fullWidth
-                  type="email"
-                  placeholder="Email *"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Ej: Juan Pérez"
+                  value={formData.name}
+                  onChange={handleChange('name')}
                   required
                   sx={{
                     mb: 3,
@@ -371,15 +309,15 @@ const Login: React.FC = () => {
                     mb: 1
                   }}
                 >
-                  Password
+                  Correo electrónico
                 </Typography>
                 
                 <TextField
                   fullWidth
-                  type="password"
-                  placeholder="Password *"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="email"
+                  placeholder="correo@empresa.com"
+                  value={formData.email}
+                  onChange={handleChange('email')}
                   required
                   sx={{
                     mb: 3,
@@ -399,7 +337,79 @@ const Login: React.FC = () => {
                   }}
                 />
 
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: '#374151',
+                    mb: 1
+                  }}
+                >
+                  Contraseña
+                </Typography>
+                
+                <TextField
+                  fullWidth
+                  type="password"
+                  placeholder="Mínimo 8 caracteres"
+                  value={formData.password}
+                  onChange={handleChange('password')}
+                  required
+                  sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      '& fieldset': {
+                        borderColor: '#d1d5db'
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#9ca3af'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#3b82f6'
+                      }
+                    }
+                  }}
+                />
+
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: '#374151',
+                    mb: 1
+                  }}
+                >
+                  Confirmar contraseña
+                </Typography>
+                
+                <TextField
+                  fullWidth
+                  type="password"
+                  placeholder="Repite tu contraseña"
+                  value={formData.confirmPassword}
+                  onChange={handleChange('confirmPassword')}
+                  required
+                  sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      '& fieldset': {
+                        borderColor: '#d1d5db'
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#9ca3af'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#3b82f6'
+                      }
+                    }
+                  }}
+                />
+
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <Button
                     variant="outlined"
                     onClick={handleBackToLogin}
@@ -418,7 +428,7 @@ const Login: React.FC = () => {
                       }
                     }}
                   >
-                    Back to home
+                    Ya tengo cuenta
                   </Button>
                   
                   <Button
@@ -428,39 +438,39 @@ const Login: React.FC = () => {
                     sx={{
                       px: 3,
                       py: 1.5,
-                      backgroundColor: '#3b82f6',
+                      backgroundColor: '#10b981',
                       borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 600,
                       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                       '&:hover': {
-                        backgroundColor: '#2563eb',
+                        backgroundColor: '#059669',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                       }
                     }}
                   >
-                    {isLoading ? <CircularProgress size={20} color="inherit" /> : 'Iniciar Sesión'}
+                    {isLoading ? <CircularProgress size={20} color="inherit" /> : 'Crear Cuenta'}
                   </Button>
                 </Box>
 
-                <Box sx={{ textAlign: 'center' }}>
+                <Box sx={{ textAlign: 'center', mt: 3 }}>
                   <Typography variant="body2" sx={{ color: '#64748b' }}>
-                    ¿No tienes cuenta?{' '}
+                    ¿Ya tienes cuenta?{' '}
                     <Link 
                       component="button"
                       type="button"
-                      onClick={() => navigate('/register')}
+                      onClick={() => navigate('/login')}
                       sx={{ 
-                        color: '#3b82f6', 
+                        color: '#10b981', 
                         textDecoration: 'none',
                         fontWeight: 600,
                         '&:hover': { 
                           textDecoration: 'underline',
-                          color: '#2563eb'
+                          color: '#059669'
                         }
                       }}
                     >
-                      Regístrate aquí
+                      Inicia sesión aquí
                     </Link>
                   </Typography>
                 </Box>
@@ -493,23 +503,11 @@ const Login: React.FC = () => {
             
             <Box sx={{ display: 'flex', gap: 3 }}>
               <Link href="#" color="#64748b" underline="none" sx={{ '&:hover': { color: '#3b82f6' } }}>
-                Home
+                Inicio
               </Link>
               <Link href="#" color="#64748b" underline="none" sx={{ '&:hover': { color: '#3b82f6' } }}>
-                Documentation
+                Documentación
               </Link>
-              <Button 
-                variant="outlined" 
-                size="small"
-                sx={{
-                  borderColor: '#d1d5db',
-                  color: '#374151',
-                  textTransform: 'none',
-                  '&:hover': { borderColor: '#3b82f6', color: '#3b82f6' }
-                }}
-              >
-                Purchase now
-              </Button>
             </Box>
           </Box>
           
@@ -525,22 +523,10 @@ const Login: React.FC = () => {
           >
             © Intranet. 2025, Desarrollado con ❤️. Todos los derechos reservados
           </Typography>
-          
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: '#9ca3af',
-              textAlign: 'center',
-              display: 'block',
-              mt: 1
-            }}
-          >
-            Cuando visitas o interactúas con nuestros sitios, servicios o herramientas, nosotros o nuestros proveedores de servicios autorizados podemos usar cookies para almacenar información para ayudarte a proporcionar una experiencia mejor, más rápida y segura y para fines de marketing.
-          </Typography>
         </Container>
       </Box>
     </Box>
   );
 };
 
-export default Login;
+export default Register;
