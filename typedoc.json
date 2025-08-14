@@ -1,0 +1,17 @@
+{
+  "entryPoints": ["src/domain", "src/application", "src/infrastructure"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "name": "Intranet API Documentation",
+  "theme": "default",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "hideGenerator": false,
+  "searchInComments": true,
+  "readme": "README.md",
+  "plugin": ["typedoc-plugin-markdown"],
+  "githubPages": false,
+  "gitRevision": "main"
+}

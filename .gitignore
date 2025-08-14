@@ -141,3 +141,6 @@ vite.config.ts.timestamp-*
 # Editor directories
 .vscode/
 .idea/
+
+*storybook.log
+storybook-static
