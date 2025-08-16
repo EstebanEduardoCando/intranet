@@ -42,6 +42,7 @@ import {
 import { useThemeStore } from '../../store/useTheme';
 import { useAuthStore } from '../../store/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { getPersonDisplayName } from '../../../domain/user/Person';
 
 interface Props {
   onMenuClick: () => void;
@@ -53,6 +54,17 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
   const navigate = useNavigate();
   const { mode, toggle: toggleTheme } = useThemeStore();
   const { user, logout } = useAuthStore();
+  
+  // Helper functions for displaying user information
+  const getUserDisplayName = () => {
+    if (!user) return 'Usuario';
+    return getPersonDisplayName(user.person);
+  };
+  
+  const getUserInitial = () => {
+    if (!user) return 'U';
+    return user.person.firstName.charAt(0).toUpperCase();
+  };
   
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
@@ -236,12 +248,12 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
                   fontWeight: 600
                 }}
               >
-                {user?.name?.charAt(0) || 'U'}
+                {getUserInitial()}
               </Avatar>
             </IconButton>
             <Box sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>
               <Typography variant="subtitle2" sx={{ lineHeight: 1.2 }}>
-                {user?.name || 'Usuario'}
+                {getUserDisplayName()}
               </Typography>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                 En línea
@@ -264,7 +276,7 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
           }}
         >
           <Box sx={{ px: 2, py: 1 }}>
-            <Typography variant="subtitle2">{user?.name || 'Usuario'}</Typography>
+            <Typography variant="subtitle2">{getUserDisplayName()}</Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               {user?.email || 'correo@ejemplo.com'}
             </Typography>

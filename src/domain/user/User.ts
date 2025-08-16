@@ -1,25 +1,92 @@
+import { Person } from './Person';
+
 /**
- * User entity representing a user in the system
+ * UserProfile entity representing a user's system profile
+ * Extends Supabase auth.users with business-specific information
  */
-export interface User {
-  /** Unique identifier for the user */
-  id: string;
+export interface UserProfile {
+  /** Unique profile identifier */
+  profileId: number;
   
-  /** User's email address (unique) */
-  email: string;
+  /** Reference to Supabase auth.users UUID */
+  userId: string;
   
-  /** User's full name */
-  name: string;
+  /** Reference to person entity */
+  personId: number;
   
-  /** User's avatar URL (optional) */
-  avatarUrl?: string;
+  /** System username (optional, unique) */
+  username?: string;
   
-  /** Timestamp when the user was created */
+  /** Whether the user profile is active */
+  isActive: boolean;
+  
+  /** Last login timestamp */
+  lastLoginAt?: Date;
+  
+  /** User preferences and settings */
+  preferences: Record<string, any>;
+  
+  /** Timestamp when the profile was created */
   createdAt: Date;
   
-  /** Timestamp when the user was last updated */
+  /** Timestamp when the profile was last updated */
   updatedAt: Date;
+}
+
+/**
+ * Complete User entity combining Supabase auth + profile + person data
+ * This is what the application layer works with
+ */
+export interface User {
+  /** Supabase auth user ID (UUID) */
+  id: string;
   
-  /** Whether the user's email is verified */
+  /** User's email from Supabase auth */
+  email: string;
+  
+  /** Whether email is verified (from Supabase auth) */
   emailVerified: boolean;
+  
+  /** User profile information */
+  profile: UserProfile;
+  
+  /** Person information */
+  person: Person;
+}
+
+/**
+ * User creation data for registration
+ */
+export interface CreateUserData {
+  email: string;
+  password: string;
+  person: {
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    secondLastName?: string;
+    identityType: 'DNI' | 'PASSPORT' | 'CC' | 'NIE' | 'OTHER';
+    identityNumber: string;
+    phone?: string;
+    birthDate?: Date;
+  };
+  username?: string;
+}
+
+/**
+ * User update data for profile modifications
+ */
+export interface UpdateUserData {
+  person?: Partial<{
+    firstName: string;
+    middleName: string;
+    lastName: string;
+    secondLastName: string;
+    phone: string;
+    birthDate: Date;
+  }>;
+  profile?: Partial<{
+    username: string;
+    preferences: Record<string, any>;
+  }>;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -35,11 +35,21 @@ import {
 } from '@mui/icons-material';
 import { useAuthStore } from '../store/useAuth';
 import { SupabaseAuthService } from '../../infrastructure/supabase/SupabaseAuthService';
+import { getPersonDisplayName, getPersonFullName } from '../../domain/user/Person';
+import { UpdateUserProfile } from '../../application/user/UpdateUserProfile';
+import { SupabasePersonRepository } from '../../infrastructure/supabase/SupabasePersonRepository';
+import { SupabaseUserProfileRepository } from '../../infrastructure/supabase/SupabaseUserProfileRepository';
+import { UpdateUserData } from '../../domain/user/User';
 
 const Profile: React.FC = () => {
   const theme = useTheme();
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
   const authService = new SupabaseAuthService();
+  
+  // Initialize repositories and use case
+  const personRepository = new SupabasePersonRepository();
+  const userProfileRepository = new SupabaseUserProfileRepository();
+  const updateUserProfile = new UpdateUserProfile(personRepository, userProfileRepository);
   
   // Estados para edición de perfil
   const [isEditing, setIsEditing] = useState(false);
@@ -49,11 +59,15 @@ const Profile: React.FC = () => {
   
   // Estados del formulario de perfil
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    firstName: user?.person.firstName || '',
+    middleName: user?.person.middleName || '',
+    lastName: user?.person.lastName || '',
+    secondLastName: user?.person.secondLastName || '',
     email: user?.email || '',
-    phone: '',
-    department: '',
-    position: ''
+    phone: user?.person.phone || '',
+    username: user?.profile.username || '',
+    identityType: user?.person.identityType || 'DNI',
+    identityNumber: user?.person.identityNumber || ''
   });
   
   // Estados para cambio de contraseña
@@ -71,6 +85,23 @@ const Profile: React.FC = () => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
+  // Update form data when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.person.firstName || '',
+        middleName: user.person.middleName || '',
+        lastName: user.person.lastName || '',
+        secondLastName: user.person.secondLastName || '',
+        email: user.email || '',
+        phone: user.person.phone || '',
+        username: user.profile.username || '',
+        identityType: user.person.identityType || 'DNI',
+        identityNumber: user.person.identityNumber || ''
+      });
+    }
+  }, [user]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -86,19 +117,31 @@ const Profile: React.FC = () => {
 
   const handleCancel = () => {
     setIsEditing(false);
-    setFormData({
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: '',
-      department: '',
-      position: ''
-    });
+    // Reset form to current user data
+    if (user) {
+      setFormData({
+        firstName: user.person.firstName || '',
+        middleName: user.person.middleName || '',
+        lastName: user.person.lastName || '',
+        secondLastName: user.person.secondLastName || '',
+        email: user.email || '',
+        phone: user.person.phone || '',
+        username: user.profile.username || '',
+        identityType: user.person.identityType || 'DNI',
+        identityNumber: user.person.identityNumber || ''
+      });
+    }
     setError('');
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      setError('El nombre es requerido');
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setError('El nombre y apellido son requeridos');
+      return;
+    }
+
+    if (!user) {
+      setError('Usuario no encontrado');
       return;
     }
 
@@ -106,9 +149,23 @@ const Profile: React.FC = () => {
     setError('');
 
     try {
-      // Aquí implementarías la actualización del perfil
-      // Por ahora simularemos la actualización
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const updateData: UpdateUserData = {
+        person: {
+          firstName: formData.firstName.trim(),
+          middleName: formData.middleName.trim() || undefined,
+          lastName: formData.lastName.trim(),
+          secondLastName: formData.secondLastName.trim() || undefined,
+          phone: formData.phone.trim() || undefined
+        },
+        profile: {
+          username: formData.username.trim() || undefined
+        }
+      };
+
+      await updateUserProfile.execute(user.id, updateData);
+      
+      // Refresh user data in the store to reflect changes immediately
+      await refreshUser();
       
       setSuccess('Perfil actualizado exitosamente');
       setIsEditing(false);
@@ -225,11 +282,71 @@ const Profile: React.FC = () => {
                   <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
-                      label="Nombre completo"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      label="Primer Nombre"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
                       disabled={!isEditing || isLoading}
                     />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Segundo Nombre"
+                      value={formData.middleName}
+                      onChange={(e) => handleInputChange('middleName', e.target.value)}
+                      disabled={!isEditing || isLoading}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Primer Apellido"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      disabled={!isEditing || isLoading}
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Segundo Apellido"
+                      value={formData.secondLastName}
+                      onChange={(e) => handleInputChange('secondLastName', e.target.value)}
+                      disabled={!isEditing || isLoading}
+                    />
+                  </Grid>
+                  
+                  {/* Identity Information */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" sx={{ color: 'text.secondary', mt: 3, mb: 2 }}>
+                      Información de Identidad
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Tipo de Documento"
+                      value={formData.identityType}
+                      disabled={true}
+                      helperText="No editable"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={8}>
+                    <TextField
+                      fullWidth
+                      label="Número de Documento"
+                      value={formData.identityNumber}
+                      disabled={true}
+                      helperText="No editable"
+                    />
+                  </Grid>
+                  
+                  {/* Contact Information */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" sx={{ color: 'text.secondary', mt: 3, mb: 2 }}>
+                      Información de Contacto
+                    </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField
@@ -237,8 +354,8 @@ const Profile: React.FC = () => {
                       label="Email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      disabled={!isEditing || isLoading}
+                      disabled={true}
+                      helperText="Gestionado por el sistema"
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -250,21 +367,19 @@ const Profile: React.FC = () => {
                       disabled={!isEditing || isLoading}
                     />
                   </Grid>
+                  
+                  {/* Account Information */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" sx={{ color: 'text.secondary', mt: 3, mb: 2 }}>
+                      Información de Cuenta
+                    </Typography>
+                  </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
-                      label="Departamento"
-                      value={formData.department}
-                      onChange={(e) => handleInputChange('department', e.target.value)}
-                      disabled={!isEditing || isLoading}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Cargo/Posición"
-                      value={formData.position}
-                      onChange={(e) => handleInputChange('position', e.target.value)}
+                      label="Nombre de Usuario"
+                      value={formData.username}
+                      onChange={(e) => handleInputChange('username', e.target.value)}
                       disabled={!isEditing || isLoading}
                     />
                   </Grid>
@@ -288,7 +403,7 @@ const Profile: React.FC = () => {
                       fontWeight: 600
                     }}
                   >
-                    {user?.name?.charAt(0) || 'U'}
+                    {user?.person.firstName.charAt(0) || 'U'}
                   </Avatar>
                   <IconButton
                     sx={{
@@ -306,7 +421,7 @@ const Profile: React.FC = () => {
                 </Box>
                 
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                  {user?.name || 'Usuario'}
+                  {user ? getPersonDisplayName(user.person) : 'Usuario'}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
                   {user?.email || 'correo@ejemplo.com'}

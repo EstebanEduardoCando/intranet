@@ -10,15 +10,27 @@ import {
   Toolbar,
   Link,
   Alert,
-  CircularProgress
+  CircularProgress,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import { useAuthStore } from '../store/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { CreateUserData } from '../../domain/user/User';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    secondLastName: '',
+    identityType: 'DNI' as const,
+    identityNumber: '',
     email: '',
+    phone: '',
+    username: '',
     password: '',
     confirmPassword: ''
   });
@@ -33,8 +45,11 @@ const Register: React.FC = () => {
     setValidationError('');
     
     // Validation
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setValidationError('Todos los campos son obligatorios');
+    const requiredFields = ['firstName', 'lastName', 'identityNumber', 'email', 'password', 'confirmPassword'];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    
+    if (missingFields.length > 0) {
+      setValidationError('Por favor completa todos los campos obligatorios');
       return;
     }
     
@@ -48,12 +63,28 @@ const Register: React.FC = () => {
       return;
     }
     
+    if (formData.identityNumber.length < 3) {
+      setValidationError('El número de identidad debe tener al menos 3 caracteres');
+      return;
+    }
+    
     try {
-      await register({
-        name: formData.name.trim(),
+      const userData: CreateUserData = {
         email: formData.email.trim(),
-        password: formData.password
-      });
+        password: formData.password,
+        person: {
+          firstName: formData.firstName.trim(),
+          middleName: formData.middleName.trim() || undefined,
+          lastName: formData.lastName.trim(),
+          secondLastName: formData.secondLastName.trim() || undefined,
+          identityType: formData.identityType,
+          identityNumber: formData.identityNumber.trim(),
+          phone: formData.phone.trim() || undefined
+        },
+        username: formData.username.trim() || undefined
+      };
+      
+      await register(userData);
       navigate('/dashboard');
     } catch (error) {
       // Error is handled by the store
@@ -266,148 +297,350 @@ const Register: React.FC = () => {
               )}
 
               <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4 }}>
+                {/* Personal Information Section */}
                 <Typography 
-                  variant="body2" 
+                  variant="subtitle1" 
                   sx={{ 
                     fontWeight: 600,
-                    color: '#374151',
-                    mb: 1
+                    color: '#1e293b',
+                    mb: 2,
+                    borderBottom: '2px solid #e2e8f0',
+                    pb: 1
                   }}
                 >
-                  Nombre completo
+                  Información Personal
                 </Typography>
-                
+
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Primer Nombre *
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      placeholder="Ej: Juan"
+                      value={formData.firstName}
+                      onChange={handleChange('firstName')}
+                      required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Segundo Nombre
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      placeholder="Ej: Carlos"
+                      value={formData.middleName}
+                      onChange={handleChange('middleName')}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Primer Apellido *
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      placeholder="Ej: Pérez"
+                      value={formData.lastName}
+                      onChange={handleChange('lastName')}
+                      required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Segundo Apellido
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      placeholder="Ej: García"
+                      value={formData.secondLastName}
+                      onChange={handleChange('secondLastName')}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* Identity Section */}
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Tipo de Documento *
+                    </Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        value={formData.identityType}
+                        onChange={(e) => setFormData(prev => ({ ...prev, identityType: e.target.value as any }))}
+                        sx={{
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#3b82f6'
+                          }
+                        }}
+                      >
+                        <MenuItem value="DNI">DNI</MenuItem>
+                        <MenuItem value="PASSPORT">Pasaporte</MenuItem>
+                        <MenuItem value="CC">Cédula</MenuItem>
+                        <MenuItem value="NIE">NIE</MenuItem>
+                        <MenuItem value="OTHER">Otro</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={8}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Número de Documento *
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      placeholder="Ej: 12345678"
+                      value={formData.identityNumber}
+                      onChange={handleChange('identityNumber')}
+                      required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* Contact Information Section */}
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: '#1e293b',
+                    mb: 2,
+                    borderBottom: '2px solid #e2e8f0',
+                    pb: 1
+                  }}
+                >
+                  Información de Contacto
+                </Typography>
+
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Correo Electrónico *
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      type="email"
+                      placeholder="correo@empresa.com"
+                      value={formData.email}
+                      onChange={handleChange('email')}
+                      required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Teléfono
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      placeholder="Ej: +51 999 999 999"
+                      value={formData.phone}
+                      onChange={handleChange('phone')}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* Account Information Section */}
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: '#1e293b',
+                    mb: 2,
+                    borderBottom: '2px solid #e2e8f0',
+                    pb: 1
+                  }}
+                >
+                  Información de Cuenta
+                </Typography>
+
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                  Nombre de Usuario (opcional)
+                </Typography>
                 <TextField
                   fullWidth
-                  placeholder="Ej: Juan Pérez"
-                  value={formData.name}
-                  onChange={handleChange('name')}
-                  required
+                  placeholder="Ej: jperez"
+                  value={formData.username}
+                  onChange={handleChange('username')}
                   sx={{
                     mb: 3,
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      '& fieldset': {
-                        borderColor: '#d1d5db'
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#9ca3af'
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#3b82f6'
-                      }
-                    }
+                    '& .MuiOutlinedInput-root': { backgroundColor: 'white', borderRadius: '8px' }
                   }}
                 />
 
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontWeight: 600,
-                    color: '#374151',
-                    mb: 1
-                  }}
-                >
-                  Correo electrónico
-                </Typography>
-                
-                <TextField
-                  fullWidth
-                  type="email"
-                  placeholder="correo@empresa.com"
-                  value={formData.email}
-                  onChange={handleChange('email')}
-                  required
-                  sx={{
-                    mb: 3,
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      '& fieldset': {
-                        borderColor: '#d1d5db'
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#9ca3af'
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#3b82f6'
-                      }
-                    }
-                  }}
-                />
-
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontWeight: 600,
-                    color: '#374151',
-                    mb: 1
-                  }}
-                >
-                  Contraseña
-                </Typography>
-                
-                <TextField
-                  fullWidth
-                  type="password"
-                  placeholder="Mínimo 8 caracteres"
-                  value={formData.password}
-                  onChange={handleChange('password')}
-                  required
-                  sx={{
-                    mb: 3,
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      '& fieldset': {
-                        borderColor: '#d1d5db'
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#9ca3af'
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#3b82f6'
-                      }
-                    }
-                  }}
-                />
-
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontWeight: 600,
-                    color: '#374151',
-                    mb: 1
-                  }}
-                >
-                  Confirmar contraseña
-                </Typography>
-                
-                <TextField
-                  fullWidth
-                  type="password"
-                  placeholder="Repite tu contraseña"
-                  value={formData.confirmPassword}
-                  onChange={handleChange('confirmPassword')}
-                  required
-                  sx={{
-                    mb: 3,
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      '& fieldset': {
-                        borderColor: '#d1d5db'
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#9ca3af'
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#3b82f6'
-                      }
-                    }
-                  }}
-                />
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Contraseña *
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      type="password"
+                      placeholder="Mínimo 8 caracteres"
+                      value={formData.password}
+                      onChange={handleChange('password')}
+                      required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                      Confirmar Contraseña *
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      type="password"
+                      placeholder="Repite tu contraseña"
+                      value={formData.confirmPassword}
+                      onChange={handleChange('confirmPassword')}
+                      required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          '& fieldset': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9ca3af'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#3b82f6'
+                          }
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
 
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <Button

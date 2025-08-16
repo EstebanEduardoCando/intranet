@@ -1,4 +1,4 @@
-import { User } from '../user/User';
+import { User, CreateUserData } from '../user/User';
 
 /**
  * Authentication result for login operations
@@ -29,7 +29,8 @@ export interface LoginCredentials {
 }
 
 /**
- * Registration data
+ * Registration data (legacy interface for backward compatibility)
+ * @deprecated Use CreateUserData instead
  */
 export interface RegisterData {
   /** User's email address */
@@ -56,12 +57,21 @@ export interface AuthService {
   login(credentials: LoginCredentials): Promise<AuthResult>;
   
   /**
-   * Register a new user
-   * @param data Registration data
+   * Register a new user with complete profile data
+   * @param userData Complete user creation data
    * @returns Promise resolving to authentication result
    * @throws RegistrationError if registration fails
    */
-  register(data: RegisterData): Promise<AuthResult>;
+  register(userData: CreateUserData): Promise<AuthResult>;
+  
+  /**
+   * Register a new user (legacy method for backward compatibility)
+   * @param data Registration data
+   * @returns Promise resolving to authentication result
+   * @throws RegistrationError if registration fails
+   * @deprecated Use register(CreateUserData) instead
+   */
+  registerLegacy?(data: RegisterData): Promise<AuthResult>;
   
   /**
    * Sign out the current user
