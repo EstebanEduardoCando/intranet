@@ -1,365 +1,87 @@
 # 🤖 CLAUDE.md - Contexto del Proyecto Intranet
 
-## 📋 Información General del Proyecto
+## 📋 Información General
+**Sistema de Intranet con Arquitectura Hexagonal** - React + TypeScript + Supabase
 
-### **Nombre del Proyecto**
-Sistema de Intranet con Arquitectura Hexagonal
+**Objetivo**: Plataforma de intranet empresarial robusta y escalable siguiendo principios de arquitectura limpia.
 
-### **Descripción**
-Aplicación React con TypeScript implementando arquitectura hexagonal (puertos y adaptadores). Sistema de intranet empresarial con autenticación completa, navegación protegida, tema claro/oscuro y documentación integrada.
-
-### **Objetivo Principal**
-Crear una plataforma de intranet robusta y escalable que sirva como base para aplicaciones empresariales, siguiendo principios de arquitectura limpia y buenas prácticas de desarrollo.
-
----
-
-## 🏗️ Arquitectura y Stack Tecnológico
-
-### **Frontend**
-- **React 18.2.0** - Biblioteca UI con hooks y StrictMode
-- **TypeScript 5.3.3** - Tipado estático y desarrollo robusto
-- **Vite 5.0.0** - Bundler rápido y servidor de desarrollo
-- **Material-UI (MUI) 5.15.20** - Sistema de componentes con theming
-- **Tailwind CSS 3.4.1** - Utilidades CSS para styling rápido
-- **React Router DOM 6.23.1** - Enrutamiento SPA con rutas protegidas
-- **Zustand 4.5.7** - Gestión de estado global con persistencia
-
-### **Backend/Base de Datos**
-- **Supabase** - BaaS (Backend as a Service)
-  - PostgreSQL como base de datos
-  - Authentication integrado
-  - Row Level Security (RLS)
-  - Real-time subscriptions
-  - Storage para archivos
-
-### **Documentación**
-- **Storybook 9.1.2** - Desarrollo y documentación de componentes UI
-- **Docusaurus 3.x** - Sitio web de documentación del proyecto
-- **TypeDoc** - Documentación automática de código TypeScript
-- **OpenAPI 3.0.3** - Especificación de API REST
-
-### **Herramientas de Desarrollo**
-- **ESLint** - Linting de código
-- **PostCSS + Autoprefixer** - Procesamiento CSS
-- **Vitest** - Framework de testing
-- **Playwright** - Testing end-to-end
-
----
+## 🏗️ Stack Tecnológico
+- **Frontend**: React 18 + TypeScript + Vite + MUI + Tailwind + Zustand
+- **Backend**: Supabase (PostgreSQL + Auth + RLS + Storage)
+- **Docs**: Storybook + Docusaurus + TypeDoc
+- **Testing**: Vitest + Playwright
 
 ## 🏛️ Arquitectura Hexagonal
-
-### **Estructura de Capas**
 ```
 src/
-├── domain/           # 🎯 NÚCLEO - Lógica de negocio pura
-│   ├── user/         # Entidades y value objects de usuario
-│   └── auth/         # Servicios y errores de autenticación
-├── application/      # 📋 CASOS DE USO - Orquestación de la lógica
-│   └── auth/         # Login, Register, Logout, GetCurrentUser
-├── infrastructure/   # 🔌 ADAPTADORES - Implementaciones concretas
-│   └── supabase/     # Adaptadores para Supabase (Auth + DB)
-└── ui/              # 🎨 INTERFAZ - Componentes React
-    ├── components/   # Componentes reutilizables
-    ├── pages/        # Páginas de la aplicación
-    ├── routes/       # Configuración de rutas
-    └── store/        # Stores de Zustand
+├── domain/           # 🎯 Lógica de negocio pura
+├── application/      # 📋 Casos de uso
+├── infrastructure/   # 🔌 Adaptadores (Supabase)
+└── ui/              # 🎨 Componentes React
 ```
 
-### **Principios Implementados**
-- **Inversión de Dependencias**: El dominio no depende de infraestructura
-- **Puertos y Adaptadores**: Interfaces claras entre capas
-- **Separación de Responsabilidades**: Cada capa tiene un propósito específico
-- **Testabilidad**: Lógica de negocio independiente de frameworks
-
----
+**Principios**: Inversión de dependencias, puertos y adaptadores, separación de responsabilidades.
 
 ## 🗄️ Configuración de Supabase
+- **Credenciales**: En variables de entorno (.env)
+- **Base de Datos**: `public.users` con RLS habilitado
+- **Auth**: Email confirmations DESHABILITADO (desarrollo)
+- **Políticas**: Users acceden solo a sus datos
 
-### **Credenciales del Proyecto**
-- **Project ID**: Configurado en variables de entorno
-- **URL**: Configurada en variables de entorno  
-- **Anon Key**: Configurado en variables de entorno
+## 🎯 Estado Actual
 
-### **Base de Datos**
-- **Tabla Principal**: `public.users`
-- **RLS**: Habilitado con políticas de seguridad
-- **Triggers**: Automáticos para creación de perfiles
-- **Functions**: Custom para manejo de usuarios
+### ✅ **Completado**
+- **Autenticación**: Login/Register/Logout/Rutas protegidas/Reset password
+- **UI/UX**: Header con usuario, sidebar, tema claro/oscuro
+- **Perfil**: Página completa con edición y cambio de contraseña
+- **Arquitectura**: Implementación hexagonal completa
+- **Documentación**: Storybook + Docusaurus configurados
 
-### **Configuración de Autenticación**
-- **Email Confirmations**: DESHABILITADO (desarrollo)
-- **Providers**: Email/Password (OAuth pendiente)
-- **Session Management**: Automático con Supabase
-- **Password Policy**: Mínimo 8 caracteres
+### 🔧 **Deuda Técnica Crítica**
+- **Casos de Uso Faltantes**: UpdateUserProfile, ChangePassword
+- **Violación Arquitectural**: Profile.tsx usa directamente SupabaseAuthService  
+- **Funcionalidad Incompleta**: Profile solo simula guardado, updatePassword no implementado
+- **Herramientas**: Falta configuración de lint y typecheck
 
----
+### ⏳ **Próximos Sprints**
+1. **Sprint 3 (CRÍTICO)**: Resolver deuda técnica y completar funcionalidades básicas
+2. **Sprint 4**: Optimización bundle y mejoras UX
+3. **Sprint 5**: Upload avatar, OAuth, notificaciones
 
-## 🎯 Estado Actual del Desarrollo
-
-### **✅ Funcionalidades Completadas**
-
-#### **Autenticación**
-- Login con email/password ✅
-- Registro de usuarios ✅
-- Logout (lógica backend) ✅
-- Rutas protegidas ✅
-- Persistencia de sesión ✅
-- Manejo de errores tipado ✅
-
-#### **UI/UX**
-- Layout responsivo con sidebar ✅
-- Tema claro/oscuro ✅
-- Navegación entre Login/Register ✅
-- Loading states ✅
-- Validación de formularios ✅
-
-#### **Arquitectura**
-- Casos de uso implementados ✅
-- Adaptadores de Supabase ✅
-- Entidades del dominio ✅
-- Dependency injection ✅
-
-#### **Documentación**
-- Storybook configurado ✅
-- Stories para componentes Layout ✅
-- Documentación de arquitectura ✅
-- OpenAPI spec creada ✅
-
-#### **Reset de Contraseña**
-- Página de solicitud de reset ✅
-- Página de nueva contraseña ✅
-- Validación de tokens ✅
-- Integración con Supabase ✅
-- Navegación completa ✅
-
-#### **Gestión de Perfil**
-- Página Mi Perfil completa ✅
-- Edición de información personal ✅
-- Cambio de contraseña integrado ✅
-- Navegación desde Header ✅
-
-### **❌ Funcionalidades Pendientes**
-Ver archivo `BACKLOG.md` para el roadmap completo.
-
----
+Ver `BACKLOG.md` para roadmap detallado.
 
 ## 🔧 Comandos de Desarrollo
-
-### **Desarrollo Principal**
 ```bash
-npm start              # Servidor de desarrollo (puerto automático)
-npm run build         # Build de producción
-npm test              # Ejecutar pruebas
+npm start              # Servidor desarrollo
+npm run build          # Build producción
+npm run storybook      # Documentación componentes
+npm run docs:dev       # Documentación proyecto
+npm run lint          # ⚠️ Por configurar (Sprint 3)
+npm run typecheck     # ⚠️ Por configurar (Sprint 3)
 ```
 
-### **Documentación**
-```bash
-npm run storybook     # Componentes UI (puerto 6006)
-npm run docs:dev      # Docusaurus (puerto 3000)
-npm run docs:api      # Generar TypeDoc
-npm run docs:openapi  # Servir OpenAPI (puerto 8082)
+## 🏗️ Estructura del Proyecto
 ```
-
-### **Calidad de Código**
-```bash
-npm run lint          # Linting (por configurar)
-npm run typecheck     # Verificación de tipos (por configurar)
+src/domain/user/User.ts                    # Entidad Usuario
+src/application/auth/                      # Casos de uso auth
+src/infrastructure/supabase/               # Adaptadores Supabase
+src/ui/pages/Profile.tsx                   # Página perfil usuario
+src/ui/components/layout/Header.tsx        # Header con usuario
 ```
-
----
-
-## 📁 Estructura Detallada del Proyecto
-
-### **Archivos de Configuración**
-- `.env` - Variables de entorno (Supabase credentials)
-- `vite.config.ts` - Configuración de Vite
-- `tailwind.config.js` - Configuración de Tailwind
-- `tsconfig.json` - Configuración de TypeScript
-- `package.json` - Dependencias y scripts
-
-### **Documentación**
-- `README.md` - Documentación principal del proyecto
-- `BACKLOG.md` - Product backlog con sprints planificados
-- `SUPABASE_SETUP.md` - Guía de configuración de Supabase
-- `SUPABASE_CONFIG.md` - Configuración para desarrollo
-- `docs/` - Docusaurus site
-- `.storybook/` - Configuración de Storybook
-
-### **Código Fuente Principal**
-```
-src/
-├── domain/
-│   ├── user/
-│   │   ├── User.ts                    # Entidad Usuario
-│   │   └── UserRepository.ts          # Puerto del repositorio
-│   └── auth/
-│       ├── AuthService.ts             # Puerto del servicio de auth
-│       └── AuthErrors.ts              # Errores del dominio
-├── application/
-│   └── auth/
-│       ├── LoginUser.ts               # Caso de uso: Login
-│       ├── RegisterUser.ts            # Caso de uso: Registro
-│       ├── LogoutUser.ts              # Caso de uso: Logout
-│       └── GetCurrentUser.ts          # Caso de uso: Usuario actual
-├── infrastructure/
-│   └── supabase/
-│       ├── supabaseClient.ts          # Cliente configurado
-│       ├── SupabaseAuthService.ts     # Adaptador de autenticación
-│       ├── SupabaseUserRepository.ts  # Adaptador de usuarios
-│       └── migrations/                # Scripts SQL
-└── ui/
-    ├── App.tsx                        # Componente raíz
-    ├── components/
-    │   └── layout/                    # Layout principal
-    │       ├── Header.tsx             # Barra superior
-    │       ├── Sidebar.tsx            # Menú lateral
-    │       ├── Footer.tsx             # Pie de página
-    │       ├── Body.tsx               # Contenido principal
-    │       └── Layout.tsx             # Layout completo
-    ├── pages/
-    │   ├── Home.tsx                   # Página inicial
-    │   ├── Login.tsx                  # Página de login
-    │   ├── Register.tsx               # Página de registro
-    │   ├── Dashboard.tsx              # Dashboard principal
-    │   ├── Profile.tsx                # Página de perfil de usuario
-    │   ├── ResetPassword.tsx          # Página de reset de contraseña
-    │   ├── NewPassword.tsx            # Página de nueva contraseña
-    │   └── Configuracion.tsx          # Página de configuración
-    ├── routes/
-    │   └── PrivateRoute.tsx           # Guard para rutas protegidas
-    └── store/
-        ├── useAuth.ts                 # Store de autenticación
-        └── useTheme.ts                # Store de tema
-```
-
----
 
 ## 🚀 Flujos Implementados
+- **Login**: Validación → Supabase Auth → Session store → Dashboard
+- **Register**: Validación → Supabase Auth → Auto-login → Dashboard  
+- **Rutas Protegidas**: PrivateRoute verifica auth → Loading → Redirect si necesario
 
-### **Registro de Usuario**
-1. Usuario completa formulario en `/register`
-2. `RegisterUser` use case valida datos
-3. `SupabaseAuthService` crea usuario en Supabase
-4. Trigger de DB crea perfil en tabla `users`
-5. Login automático y redirección a `/dashboard`
+## 🔒 Seguridad
+- Passwords hasheados por Supabase, JWT tokens, RLS políticas
+- Validación UI y lógica, manejo seguro tokens, rutas protegidas
 
-### **Login de Usuario**
-1. Usuario completa formulario en `/login`
-2. `LoginUser` use case valida credenciales
-3. `SupabaseAuthService` autentica con Supabase
-4. Session se guarda en store con persistencia
-5. Redirección a `/dashboard`
-
-### **Rutas Protegidas**
-1. `PrivateRoute` verifica autenticación
-2. Si no autenticado, llama `getCurrentUser`
-3. Muestra loading durante verificación
-4. Redirige a `/login` si no autenticado
+## 📊 Métricas
+- **Performance**: Build 41s, Bundle 635kB (necesita optimización)
+- **Calidad**: TypeScript strict, arquitectura hexagonal, error handling
 
 ---
 
-## 🔒 Seguridad Implementada
-
-### **Autenticación**
-- Passwords hasheados por Supabase
-- JWT tokens con expiración
-- Session management automático
-- Logout seguro que invalida tokens
-
-### **Base de Datos**
-- Row Level Security (RLS) habilitado
-- Políticas: usuarios solo acceden a sus datos
-- Triggers para integridad de datos
-- Validación en casos de uso
-
-### **Frontend**
-- Validación de inputs en UI y lógica
-- Manejo seguro de tokens
-- No exposición de credenciales
-- Rutas protegidas con guards
-
----
-
-## 🐛 Debugging y Logs
-
-### **Logs Implementados**
-- Console logs en `SupabaseAuthService` para debugging
-- Error tracking en casos de uso
-- Estado de loading en componentes UI
-
-### **Herramientas de Debug**
-- React DevTools para componentes
-- Zustand DevTools para estado
-- Supabase Dashboard para DB
-- Browser Network tab para requests
-
----
-
-## 📊 Métricas y Monitoring
-
-### **Performance**
-- Build time: ~39 segundos
-- Bundle size: 550.18 kB (167.04 kB gzipped)
-- Hot reload: <200ms
-
-### **Calidad de Código**
-- TypeScript strict mode habilitado
-- Arquitectura hexagonal implementada
-- Separation of concerns respetada
-- Error handling robusto
-
----
-
-## 🔄 Próximos Pasos
-
-### **Inmediatos (Sprint 3)**
-- OAuth providers (Google/GitHub)
-- Gestión avanzada de sesión
-- Verificación de email
-
-### **Mediano Plazo**
-- Testing automatizado
-- Modelo de datos completo
-- Roles y permisos
-
-### **Largo Plazo**
-- Testing automatizado
-- CI/CD pipeline
-- Monitoreo de producción
-- Escalabilidad horizontal
-
----
-
-## 🆘 Troubleshooting Común
-
-### **Error 400 en Registro**
-- Verificar email confirmations deshabilitado en Supabase
-- Revisar configuración de URL redirect
-
-### **Usuario no se autentica**
-- Verificar variables de entorno
-- Comprobar migración SQL ejecutada
-- Revisar políticas RLS en tabla users
-
-### **Build failures**
-- Verificar dependencias actualizadas
-- Comprobar TypeScript errors
-- Revisar imports y exports
-
----
-
-## 📞 Información de Contacto del Proyecto
-
-### **Repositorio**
-- Ubicación: Local development
-- Rama principal: `main`
-- Rama de desarrollo: `develop`
-
-### **Despliegue**
-- Desarrollo: `http://localhost:8083/` (puerto variable)
-- Producción: Por configurar
-
----
-
-*Última actualización: 2025-08-15*  
-*Generado por Claude Code para facilitar el desarrollo colaborativo*
+*Actualizado: 2025-08-16 - Análisis deuda técnica completado*
