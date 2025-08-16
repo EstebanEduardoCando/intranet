@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Drawer,
   List,
@@ -12,7 +12,8 @@ import {
   Divider,
   useTheme,
   alpha,
-  Badge
+  Badge,
+  CircularProgress
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -29,9 +30,18 @@ import {
   ExpandLess,
   ExpandMore,
   Circle as CircleIcon,
-  FiberManualRecord as DotIcon
+  FiberManualRecord as DotIcon,
+  Apps as AppsIcon,
+  Work as WorkIcon,
+  AccountBalance as AccountBalanceIcon,
+  School as SchoolIcon,
+  Store as StoreIcon,
+  LibraryBooks as LibraryBooksIcon
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
+import { GetModules } from '../../../application/modules/GetModules';
+import { SupabaseModuleRepository } from '../../../infrastructure/supabase/SupabaseModuleRepository';
+import { Module, moduleCodeToPath } from '../../../domain/modules/Module';
 
 interface Props {
   mobileOpen: boolean;
@@ -48,101 +58,79 @@ interface MenuItemType {
   children?: MenuItemType[];
 }
 
-const menuItems: MenuItemType[] = [
-  {
-    id: 'dashboard',
-    title: 'Dashboard',
-    icon: <DashboardIcon />,
-    path: '/dashboard',
-  },
-  {
-    id: 'apps',
-    title: 'Aplicaciones',
-    icon: <BusinessIcon />,
-    children: [
-      {
-        id: 'email',
-        title: 'Email',
-        icon: <EmailIcon />,
-        path: '/apps/email',
-        badge: 12
-      },
-      {
-        id: 'calendar',
-        title: 'Calendario',
-        icon: <EventIcon />,
-        path: '/apps/calendar',
-      },
-      {
-        id: 'documents',
-        title: 'Documentos',
-        icon: <DescriptionIcon />,
-        path: '/apps/documents',
-      },
-    ]
-  },
-  {
-    id: 'management',
-    title: 'Gestión',
-    icon: <PeopleIcon />,
-    children: [
-      {
-        id: 'users',
-        title: 'Usuarios',
-        icon: <PeopleIcon />,
-        path: '/management/users',
-      },
-      {
-        id: 'roles',
-        title: 'Roles y Permisos',
-        icon: <SecurityIcon />,
-        path: '/management/roles',
-      },
-      {
-        id: 'departments',
-        title: 'Departamentos',
-        icon: <BusinessIcon />,
-        path: '/management/departments',
-      },
-    ]
-  },
-  {
-    id: 'reports',
-    title: 'Reportes',
-    icon: <AnalyticsIcon />,
-    children: [
-      {
-        id: 'analytics',
-        title: 'Análisis',
-        icon: <AnalyticsIcon />,
-        path: '/reports/analytics',
-      },
-      {
-        id: 'tasks',
-        title: 'Tareas',
-        icon: <AssignmentIcon />,
-        path: '/reports/tasks',
-      },
-    ]
-  },
-  {
-    id: 'configuration',
-    title: 'Configuración',
-    icon: <SettingsIcon />,
-    path: '/configuracion',
-  },
-  {
-    id: 'help',
-    title: 'Ayuda',
-    icon: <HelpIcon />,
-    path: '/help',
-  },
-];
+/**
+ * Convert Module entity to MenuItemType
+ */
+const convertModuleToMenuItem = (module: Module): MenuItemType => {
+  // Solo los módulos sin hijos (hojas) deben tener path
+  const hasChildren = module.children && module.children.length > 0;
+  
+  return {
+    id: module.code,
+    title: module.name,
+    icon: getModuleIcon(module.icon || module.code),
+    path: hasChildren ? undefined : moduleCodeToPath(module.code),
+    children: module.children?.map(convertModuleToMenuItem)
+  };
+};
+
+/**
+ * Get appropriate icon for module based on code/icon
+ */
+const getModuleIcon = (iconCode: string): React.ReactNode => {
+  const iconMap: Record<string, React.ReactNode> = {
+    'DASHBOARD': <DashboardIcon />,
+    'ADMIN': <SettingsIcon />,
+    'HR': <PeopleIcon />,
+    'HR.EMPLOYEES': <PeopleIcon />,
+    'HR.DEPARTMENTS': <BusinessIcon />,
+    'FINANCE': <AccountBalanceIcon />,
+    'FINANCE.ACCOUNTING': <LibraryBooksIcon />,
+    'FINANCE.BUDGET': <AnalyticsIcon />,
+    'OPERATIONS': <WorkIcon />,
+    'OPERATIONS.PROJECTS': <AssignmentIcon />,
+    'OPERATIONS.INVENTORY': <StoreIcon />,
+    'TRAINING': <SchoolIcon />,
+    'APPS': <AppsIcon />,
+    'REPORTS': <AnalyticsIcon />,
+    'HELP': <HelpIcon />,
+    // Default icons based on common patterns
+    'default': <CircleIcon />
+  };
+
+  return iconMap[iconCode.toUpperCase()] || iconMap['default'];
+};
 
 const Sidebar: React.FC<Props> = ({ mobileOpen, onDrawerToggle, drawerWidth }) => {
   const theme = useTheme();
   const location = useLocation();
-  const [openItems, setOpenItems] = useState<string[]>(['apps']);
+  const [openItems, setOpenItems] = useState<string[]>(['HR', 'ADMIN', 'FINANCE']);
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Initialize repositories and use cases
+  const moduleRepository = new SupabaseModuleRepository();
+  const getModules = new GetModules(moduleRepository);
+
+  // Load modules from database
+  useEffect(() => {
+    const loadModules = async () => {
+      try {
+        setIsLoading(true);
+        const modules = await getModules.execute();
+        const convertedMenuItems = modules.map(convertModuleToMenuItem);
+        setMenuItems(convertedMenuItems);
+      } catch (error) {
+        console.error('Error loading modules:', error);
+        // Fallback to empty array on error
+        setMenuItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadModules();
+  }, []);
 
   const handleToggle = (itemId: string) => {
     setOpenItems(prev =>
@@ -307,9 +295,15 @@ const Sidebar: React.FC<Props> = ({ mobileOpen, onDrawerToggle, drawerWidth }) =
 
       {/* Navigation */}
       <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
-        <List disablePadding>
-          {menuItems.map(item => renderMenuItem(item))}
-        </List>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : (
+          <List disablePadding>
+            {menuItems.map(item => renderMenuItem(item))}
+          </List>
+        )}
       </Box>
 
       {/* Footer */}

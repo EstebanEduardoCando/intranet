@@ -9,6 +9,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Configuracion from './pages/Configuracion';
 import Profile from './pages/Profile';
+import UserManagement from './pages/management/UserManagement';
+import PlaceholderPage from './pages/PlaceholderPage';
 import LandingRegistro from './pages/LandingRegistro';
 import ResetPassword from './pages/ResetPassword';
 import NewPassword from './pages/NewPassword';
@@ -103,11 +105,28 @@ const App: React.FC = () => {
           <Route path="/new-password" element={<NewPassword />} />
           <Route path="/landing-registro" element={<LandingRegistro />} />
           <Route element={<Layout />}>
+            {/* Main Routes */}
             <Route
               path="/dashboard"
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute>
+                  <Configuracion />
                 </PrivateRoute>
               }
             />
@@ -119,11 +138,73 @@ const App: React.FC = () => {
                 </PrivateRoute>
               }
             />
+            
+            {/* HR Module Routes */}
             <Route
-              path="/profile"
+              path="/hr/employees"
               element={
                 <PrivateRoute>
-                  <Profile />
+                  <UserManagement />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/hr/positions"
+              element={
+                <PrivateRoute>
+                  <PlaceholderPage moduleName="Gestión de Cargos" moduleDescription="Administración de posiciones y asignaciones laborales" />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/hr/recruitment"
+              element={
+                <PrivateRoute>
+                  <PlaceholderPage moduleName="Reclutamiento" moduleDescription="Procesos de contratación y selección de personal" />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Admin Module Routes */}
+            <Route
+              path="/admin/users"
+              element={
+                <PrivateRoute>
+                  <PlaceholderPage moduleName="Administración de Usuarios" moduleDescription="Gestión avanzada de usuarios del sistema" />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/companies"
+              element={
+                <PrivateRoute>
+                  <PlaceholderPage moduleName="Gestión de Empresas" moduleDescription="Administración de empresas y organizaciones" />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/roles"
+              element={
+                <PrivateRoute>
+                  <PlaceholderPage moduleName="Gestión de Roles" moduleDescription="Administración de roles y permisos del sistema" />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Finance Module Routes */}
+            <Route
+              path="/finance/accounting"
+              element={
+                <PrivateRoute>
+                  <PlaceholderPage moduleName="Contabilidad" moduleDescription="Gestión contable y libros financieros" />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/finance/budgets"
+              element={
+                <PrivateRoute>
+                  <PlaceholderPage moduleName="Presupuestos" moduleDescription="Planificación y control presupuestario" />
                 </PrivateRoute>
               }
             />

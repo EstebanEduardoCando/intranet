@@ -30,25 +30,30 @@ src/
 
 ## 🎯 Estado Actual
 
-### ✅ **Completado**
-- **Autenticación**: Login/Register/Logout/Rutas protegidas/Reset password
-- **UI/UX**: Header con usuario, sidebar, tema claro/oscuro
-- **Perfil**: Página completa con edición y guardado real funcional
+### ✅ **Sprint 3 - COMPLETADO**
+- **Autenticación**: Login/Register/Logout/Rutas protegidas/Reset password/ChangePassword
+- **UI/UX**: Header con usuario, sidebar dinámico, breadcrumbs, toggle sidebar
+- **Perfil**: Página completa con edición, guardado real y cambio de contraseña
 - **Arquitectura**: Implementación hexagonal completa y respetada
 - **Documentación**: Storybook + Docusaurus configurados
 - **Modelo de Datos**: Schema completo con Person + UserProfile + auth.users
-- **Registro de Usuario**: Formulario completo con CreateUserData
-- **Sincronización**: Estado global actualizado en tiempo real
+- **Sistema de Módulos**: Sidebar dinámico desde BD, jerarquías, rutas automáticas
+- **User Management**: Página completa con tabla, filtros, acciones CRUD
+- **Herramientas**: lint y typecheck configurados
+- **Navegación**: Breadcrumbs funcionales, sidebar collapsible
 
-### 🔧 **Deuda Técnica Restante**
-- **Casos de Uso Faltantes**: ChangePassword (único pendiente)
-- **Herramientas**: Falta configuración de lint y typecheck
-- **Optimización**: Bundle 635kB necesita code splitting
+### 🔄 **Funcionalidades Implementadas**
+- **ChangePassword**: Validaciones, UI completa, integración real
+- **GetModules**: Caso de uso para módulos desde BD 
+- **Breadcrumbs**: Sistema de migas de pan contextual
+- **Toggle Sidebar**: Botón hamburguesa, espaciado dinámico
+- **Páginas Placeholder**: Para módulos en desarrollo
+- **Rutas Dinámicas**: Solo submódulos navegables
 
 ### ⏳ **Próximos Sprints**
-1. **Sprint 3 Final**: Completar ChangePassword + herramientas
-2. **Sprint 4**: Optimización bundle y mejoras UX  
-3. **Sprint 5**: Upload avatar, OAuth, notificaciones
+1. **Sprint 4**: Implementar funcionalidades reales en User Management
+2. **Sprint 5**: Optimización bundle y code splitting
+3. **Sprint 6**: Upload avatar, OAuth, notificaciones
 
 Ver `BACKLOG.md` para roadmap detallado.
 
@@ -78,39 +83,56 @@ npm start              # Servidor desarrollo
 npm run build          # Build producción
 npm run storybook      # Documentación componentes
 npm run docs:dev       # Documentación proyecto
-npm run lint          # ⚠️ Por configurar (Sprint 3)
-npm run typecheck     # ⚠️ Por configurar (Sprint 3)
+npm run lint           # ✅ ESLint configurado
+npm run typecheck      # ✅ TypeScript checker
 ```
 
 ## 🏗️ Estructura del Proyecto
 ```
-src/domain/user/
-├── User.ts                               # Entidades User, UserProfile, CreateUserData
-├── Person.ts                             # Entidad Person + helpers
-└── UserRepository.ts                     # Puerto para repositorio
+src/domain/
+├── user/
+│   ├── User.ts                          # Entidades User, UserProfile, CreateUserData
+│   └── Person.ts                        # Entidad Person + helpers
+└── modules/
+    └── Module.ts                        # Entidad Module + jerarquías
 
 src/application/
-├── auth/                                 # Casos de uso autenticación
-└── user/
-    └── UpdateUserProfile.ts              # Caso de uso actualización perfil
+├── auth/                                # Casos de uso autenticación
+├── user/
+│   ├── UpdateUserProfile.ts            # Caso de uso actualización perfil
+│   └── ChangePassword.ts               # Caso de uso cambio contraseña
+└── modules/
+    └── GetModules.ts                    # Caso de uso obtener módulos
 
 src/infrastructure/supabase/
-├── SupabaseAuthService.ts                # Servicio auth integrado
-├── SupabasePersonRepository.ts          # Repositorio personas
-└── SupabaseUserProfileRepository.ts     # Repositorio perfiles
+├── SupabaseAuthService.ts               # Servicio auth integrado
+├── SupabasePersonRepository.ts         # Repositorio personas
+├── SupabaseUserProfileRepository.ts    # Repositorio perfiles
+└── SupabaseModuleRepository.ts         # Repositorio módulos
 
 src/ui/
 ├── pages/
-│   ├── Register.tsx                      # Formulario registro completo
-│   └── Profile.tsx                       # Página perfil con guardado real
-├── components/layout/Header.tsx          # Header con display actualizado
-└── store/useAuth.ts                      # Store con sincronización
+│   ├── Register.tsx                     # Formulario registro completo
+│   ├── Profile.tsx                      # Página perfil con cambio contraseña
+│   ├── PlaceholderPage.tsx             # Páginas en desarrollo
+│   └── management/
+│       └── UserManagement.tsx          # Gestión completa de usuarios
+├── components/
+│   ├── layout/
+│   │   ├── Header.tsx                   # Header con toggle sidebar
+│   │   ├── Sidebar.tsx                  # Sidebar dinámico desde BD
+│   │   └── Layout.tsx                   # Layout con breadcrumbs
+│   └── common/
+│       └── Breadcrumbs.tsx             # Sistema de migas de pan
+└── store/useAuth.ts                     # Store con sincronización
 ```
 
 ## 🚀 Flujos Implementados
 - **Login**: Validación → Supabase Auth → Session store → Dashboard
 - **Register**: Validación completa → Crear Person + UserProfile + Auth → Dashboard  
 - **Update Profile**: Validación → UpdateUserProfile → refreshUser → Sync UI
+- **Change Password**: Validación → ChangePassword → Confirmación éxito
+- **Navegación**: Sidebar dinámico → Breadcrumbs → Rutas específicas
 - **Rutas Protegidas**: PrivateRoute verifica auth → Loading → Redirect si necesario
 - **Sincronización**: Cambios BD → Estado global → UI tiempo real
 
@@ -124,4 +146,4 @@ src/ui/
 
 ---
 
-*Actualizado: 2025-08-16 - Sprint 3 casi completado - Modelo de datos y funcionalidades críticas implementadas*
+*Actualizado: 2025-08-16 - Sprint 3 COMPLETADO - Sistema de módulos, navegación y UX mejorados*

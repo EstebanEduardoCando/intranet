@@ -27,6 +27,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
+  MenuOpen as MenuOpenIcon,
   Notifications as NotificationsIcon,
   Email as EmailIcon,
   Settings as SettingsIcon,
@@ -46,10 +47,11 @@ import { getPersonDisplayName } from '../../../domain/user/Person';
 
 interface Props {
   onMenuClick: () => void;
+  onSidebarToggle: () => void;
   drawerWidth: number;
 }
 
-const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
+const Header: React.FC<Props> = ({ onMenuClick, onSidebarToggle, drawerWidth }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { mode, toggle: toggleTheme } = useThemeStore();
@@ -144,6 +146,7 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
       <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 } }}>
         {/* Left Section - Menu & Search */}
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* Mobile menu button */}
           <IconButton
             color="inherit"
             edge="start"
@@ -155,6 +158,19 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
             }}
           >
             <MenuIcon />
+          </IconButton>
+          
+          {/* Desktop sidebar toggle button */}
+          <IconButton
+            color="inherit"
+            onClick={onSidebarToggle}
+            sx={{ 
+              mr: 2,
+              display: { xs: 'none', sm: 'flex' },
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+            }}
+          >
+            {drawerWidth > 0 ? <MenuOpenIcon /> : <MenuIcon />}
           </IconButton>
           
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>

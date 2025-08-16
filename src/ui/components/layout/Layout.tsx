@@ -4,6 +4,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 import Body from './Body';
+import Breadcrumbs from '../common/Breadcrumbs';
 import { Outlet } from 'react-router-dom';
 
 const drawerWidth = 280;
@@ -11,21 +12,30 @@ const drawerWidth = 280;
 const Layout: React.FC = () => {
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+  const handleSidebarToggle = () => setSidebarOpen(!sidebarOpen);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <CssBaseline />
       
       {/* Header */}
-      <Header onMenuClick={handleDrawerToggle} drawerWidth={drawerWidth} />
+      <Header 
+        onMenuClick={handleDrawerToggle} 
+        onSidebarToggle={handleSidebarToggle}
+        drawerWidth={sidebarOpen ? drawerWidth : 0} 
+      />
       
       {/* Sidebar */}
-      <Sidebar
-        mobileOpen={mobileOpen}
-        onDrawerToggle={handleDrawerToggle}
-        drawerWidth={drawerWidth}
-      />
+      {sidebarOpen && (
+        <Sidebar
+          mobileOpen={mobileOpen}
+          onDrawerToggle={handleDrawerToggle}
+          drawerWidth={drawerWidth}
+        />
+      )}
       
       {/* Main Content */}
       <Box
@@ -34,14 +44,24 @@ const Layout: React.FC = () => {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          width: { 
+            xs: '100%',
+            sm: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : '100%'
+          },
           ml: { sm: 0 },
           bgcolor: 'background.default',
-          minHeight: '100vh'
+          minHeight: '100vh',
+          transition: theme.transitions.create(['width', 'margin'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          })
         }}
       >
         {/* Spacer for fixed header */}
         <Toolbar />
+        
+        {/* Breadcrumbs */}
+        <Breadcrumbs />
         
         {/* Page Content */}
         <Box

@@ -37,6 +37,7 @@ import { useAuthStore } from '../store/useAuth';
 import { SupabaseAuthService } from '../../infrastructure/supabase/SupabaseAuthService';
 import { getPersonDisplayName, getPersonFullName } from '../../domain/user/Person';
 import { UpdateUserProfile } from '../../application/user/UpdateUserProfile';
+import { ChangePassword } from '../../application/user/ChangePassword';
 import { SupabasePersonRepository } from '../../infrastructure/supabase/SupabasePersonRepository';
 import { SupabaseUserProfileRepository } from '../../infrastructure/supabase/SupabaseUserProfileRepository';
 import { UpdateUserData } from '../../domain/user/User';
@@ -46,10 +47,11 @@ const Profile: React.FC = () => {
   const { user, refreshUser } = useAuthStore();
   const authService = new SupabaseAuthService();
   
-  // Initialize repositories and use case
+  // Initialize repositories and use cases
   const personRepository = new SupabasePersonRepository();
   const userProfileRepository = new SupabaseUserProfileRepository();
   const updateUserProfile = new UpdateUserProfile(personRepository, userProfileRepository);
+  const changePassword = new ChangePassword(authService);
   
   // Estados para edición de perfil
   const [isEditing, setIsEditing] = useState(false);
@@ -196,9 +198,8 @@ const Profile: React.FC = () => {
     setPasswordError('');
 
     try {
-      // Usar el servicio de Supabase para actualizar contraseña
-      // Nota: Supabase requiere re-autenticación para cambios de contraseña
-      await authService.updatePassword(passwordData.newPassword);
+      // Usar el caso de uso ChangePassword con validaciones mejoradas
+      await changePassword.execute(passwordData.currentPassword, passwordData.newPassword);
       
       setPasswordDialogOpen(false);
       setPasswordData({
@@ -217,16 +218,6 @@ const Profile: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 4 }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
-            Mi Perfil
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            Administra tu información personal y configuración de cuenta
-          </Typography>
-        </Box>
-
         <Grid container spacing={4}>
           {/* Información Principal */}
           <Grid item xs={12} md={8}>
