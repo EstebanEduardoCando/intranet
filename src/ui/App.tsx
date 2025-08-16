@@ -8,7 +8,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Configuracion from './pages/Configuracion';
+import Profile from './pages/Profile';
 import LandingRegistro from './pages/LandingRegistro';
+import ResetPassword from './pages/ResetPassword';
+import NewPassword from './pages/NewPassword';
 import Error404 from './pages/Error404';
 import NotFound from './pages/NotFound';
 import PrivateRoute from './routes/PrivateRoute';
@@ -96,6 +99,8 @@ const App: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/new-password" element={<NewPassword />} />
           <Route path="/landing-registro" element={<LandingRegistro />} />
           <Route element={<Layout />}>
             <Route
@@ -111,6 +116,14 @@ const App: React.FC = () => {
               element={
                 <PrivateRoute>
                   <Configuracion />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
                 </PrivateRoute>
               }
             />

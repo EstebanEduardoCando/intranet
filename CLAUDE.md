@@ -125,6 +125,19 @@ src/
 - Documentación de arquitectura ✅
 - OpenAPI spec creada ✅
 
+#### **Reset de Contraseña**
+- Página de solicitud de reset ✅
+- Página de nueva contraseña ✅
+- Validación de tokens ✅
+- Integración con Supabase ✅
+- Navegación completa ✅
+
+#### **Gestión de Perfil**
+- Página Mi Perfil completa ✅
+- Edición de información personal ✅
+- Cambio de contraseña integrado ✅
+- Navegación desde Header ✅
+
 ### **❌ Funcionalidades Pendientes**
 Ver archivo `BACKLOG.md` para el roadmap completo.
 
@@ -208,6 +221,9 @@ src/
     │   ├── Login.tsx                  # Página de login
     │   ├── Register.tsx               # Página de registro
     │   ├── Dashboard.tsx              # Dashboard principal
+    │   ├── Profile.tsx                # Página de perfil de usuario
+    │   ├── ResetPassword.tsx          # Página de reset de contraseña
+    │   ├── NewPassword.tsx            # Página de nueva contraseña
     │   └── Configuracion.tsx          # Página de configuración
     ├── routes/
     │   └── PrivateRoute.tsx           # Guard para rutas protegidas
@@ -296,15 +312,15 @@ src/
 
 ## 🔄 Próximos Pasos
 
-### **Inmediatos (Sprint 1)**
-- Header con información de usuario
-- Botón de logout funcional
-- Dashboard con datos personalizados
+### **Inmediatos (Sprint 3)**
+- OAuth providers (Google/GitHub)
+- Gestión avanzada de sesión
+- Verificación de email
 
 ### **Mediano Plazo**
-- Reset de contraseña
-- Perfil de usuario editable
-- OAuth providers (Google/GitHub)
+- Testing automatizado
+- Modelo de datos completo
+- Roles y permisos
 
 ### **Largo Plazo**
 - Testing automatizado
@@ -345,5 +361,5 @@ src/
 
 ---
 
-*Última actualización: 2025-08-14*  
+*Última actualización: 2025-08-15*  
 *Generado por Claude Code para facilitar el desarrollo colaborativo*

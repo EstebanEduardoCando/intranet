@@ -443,6 +443,26 @@ const Login: React.FC = () => {
                   </Button>
                 </Box>
 
+                <Box sx={{ textAlign: 'center', mb: 2 }}>
+                  <Link 
+                    component="button"
+                    type="button"
+                    onClick={() => navigate('/reset-password')}
+                    sx={{ 
+                      color: '#3b82f6', 
+                      textDecoration: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.875rem',
+                      '&:hover': { 
+                        textDecoration: 'underline',
+                        color: '#2563eb'
+                      }
+                    }}
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </Box>
+
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="body2" sx={{ color: '#64748b' }}>
                     ¿No tienes cuenta?{' '}

@@ -16,7 +16,14 @@ import {
   Select,
   FormControl,
   useTheme,
-  alpha
+  alpha,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  DialogContentText,
+  Alert
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -34,6 +41,7 @@ import {
 } from '@mui/icons-material';
 import { useThemeStore } from '../../store/useTheme';
 import { useAuthStore } from '../../store/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   onMenuClick: () => void;
@@ -42,6 +50,7 @@ interface Props {
 
 const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { mode, toggle: toggleTheme } = useThemeStore();
   const { user, logout } = useAuthStore();
   
@@ -49,6 +58,9 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [language, setLanguage] = useState('es');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutSuccess, setLogoutSuccess] = useState(false);
 
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     setProfileAnchorEl(event.currentTarget);
@@ -66,9 +78,31 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
     setNotificationAnchorEl(null);
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    setLogoutDialogOpen(true);
     handleProfileClose();
+  };
+
+  const confirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setLogoutSuccess(true);
+      setTimeout(() => {
+        setLogoutDialogOpen(false);
+        setIsLoggingOut(false);
+        setLogoutSuccess(false);
+      }, 1500);
+    } catch (error) {
+      setIsLoggingOut(false);
+      // El error se maneja en el store de auth
+    }
+  };
+
+  const cancelLogout = () => {
+    setLogoutDialogOpen(false);
+    setIsLoggingOut(false);
+    setLogoutSuccess(false);
   };
 
   const toggleFullscreen = () => {
@@ -237,7 +271,7 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
             <Chip label="Administrador" size="small" color="primary" sx={{ mt: 0.5 }} />
           </Box>
           <Divider />
-          <MenuItem onClick={handleProfileClose}>
+          <MenuItem onClick={() => { handleProfileClose(); navigate('/profile'); }}>
             <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Mi Perfil</ListItemText>
           </MenuItem>
@@ -291,6 +325,53 @@ const Header: React.FC<Props> = ({ onMenuClick, drawerWidth }) => {
             </Box>
           </MenuItem>
         </Menu>
+
+        {/* Logout Confirmation Dialog */}
+        <Dialog
+          open={logoutDialogOpen}
+          onClose={!isLoggingOut ? cancelLogout : undefined}
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              minWidth: 400
+            }
+          }}
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            {logoutSuccess ? '¡Hasta pronto!' : '¿Cerrar sesión?'}
+          </DialogTitle>
+          <DialogContent>
+            {logoutSuccess ? (
+              <Alert severity="success" sx={{ mt: 1 }}>
+                Sesión cerrada exitosamente. Redirigiendo...
+              </Alert>
+            ) : (
+              <DialogContentText>
+                ¿Estás seguro que deseas cerrar tu sesión? Tendrás que volver a iniciar sesión para acceder al sistema.
+              </DialogContentText>
+            )}
+          </DialogContent>
+          {!logoutSuccess && (
+            <DialogActions sx={{ p: 3, pt: 1 }}>
+              <Button 
+                onClick={cancelLogout}
+                disabled={isLoggingOut}
+                color="inherit"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={confirmLogout}
+                disabled={isLoggingOut}
+                variant="contained"
+                color="error"
+                sx={{ ml: 1 }}
+              >
+                {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+              </Button>
+            </DialogActions>
+          )}
+        </Dialog>
       </Toolbar>
     </AppBar>
   );

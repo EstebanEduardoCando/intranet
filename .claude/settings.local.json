@@ -16,7 +16,9 @@
       "Bash(git add:*)",
       "Bash(claude mcp:*)",
       "Bash(npm run build:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:templates.iqonic.design)"
     ],
     "deny": [],
     "ask": [],

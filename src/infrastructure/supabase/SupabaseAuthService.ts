@@ -177,4 +177,14 @@ export class SupabaseAuthService implements AuthService {
       throw new Error(`Password reset failed: ${error.message}`);
     }
   }
+  
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      throw new Error(`Password update failed: ${error.message}`);
+    }
+  }
 }

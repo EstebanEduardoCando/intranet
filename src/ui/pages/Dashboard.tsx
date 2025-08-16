@@ -26,11 +26,25 @@ import {
   MoreVert as MoreVertIcon,
   ArrowUpward as ArrowUpIcon,
   ArrowDownward as ArrowDownIcon,
-  Circle as CircleIcon
+  Circle as CircleIcon,
+  WavingHand as WavingHandIcon
 } from '@mui/icons-material';
+import { useAuthStore } from '../store/useAuth';
 
 const Dashboard: React.FC = () => {
   const theme = useTheme();
+  const { user } = useAuthStore();
+  
+  // Obtener fecha y hora actual
+  const now = new Date();
+  const greeting = now.getHours() < 12 ? 'Buenos días' : now.getHours() < 18 ? 'Buenas tardes' : 'Buenas noches';
+  const lastLoginDate = new Date().toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 
   const statsCards = [
     {
@@ -124,15 +138,52 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
-          Panel de Control
-        </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Resumen de actividades y métricas principales
-        </Typography>
-      </Box>
+      {/* Welcome Header */}
+      <Card
+        sx={{
+          mb: 4,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.05)})`,
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`
+        }}
+      >
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <WavingHandIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5 }}>
+                {greeting}, {user?.name || 'Usuario'}!
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                Bienvenido de nuevo a tu panel de control
+              </Typography>
+            </Box>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mt: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar
+                sx={{
+                  width: 24,
+                  height: 24,
+                  bgcolor: 'success.main',
+                  fontSize: '0.75rem'
+                }}
+              >
+                {user?.name?.charAt(0) || 'U'}
+              </Avatar>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {user?.email || 'correo@ejemplo.com'}
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              •
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Último acceso: {lastLoginDate}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
 
       <Grid container spacing={3}>
         {/* Stats Cards */}
