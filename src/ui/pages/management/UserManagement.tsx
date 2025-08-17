@@ -31,6 +31,7 @@ import {
   useTheme,
   alpha
 } from '@mui/material';
+import { useNotifications } from '../../contexts/NotificationContext';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -60,7 +61,6 @@ import { SupabaseUserRepository } from '../../../infrastructure/supabase/Supabas
 import { SupabaseCompanyRepository } from '../../../infrastructure/supabase/SupabaseCompanyRepository';
 import { SupabasePositionRepository } from '../../../infrastructure/supabase/SupabasePositionRepository';
 import { SupabaseRoleRepository } from '../../../infrastructure/supabase/SupabaseRoleRepository';
-import { DatabaseStatus } from '../../components/common/DatabaseStatus';
 
 // Initialize repositories and use cases
 const userRepository = new SupabaseUserRepository();
@@ -79,6 +79,7 @@ const getRoles = new GetRoles(roleRepository);
 
 const UserManagement: React.FC = () => {
   const theme = useTheme();
+  const { showError, showSuccess } = useNotifications();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,20 +92,11 @@ const UserManagement: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [error, setError] = useState('');
-  const [isDatabaseReady, setIsDatabaseReady] = useState(false);
-
   // Load users and related data
   useEffect(() => {
     const loadData = async () => {
-      if (!isDatabaseReady) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
-        setError('');
         
         // Load users with search and pagination
         const usersResponse = await getUsers.execute({
@@ -127,16 +119,21 @@ const UserManagement: React.FC = () => {
         setPositions(positionsData);
         setRoles(rolesData);
         
+        // Show success notification on first successful load
+        if (users.length === 0 && usersResponse.users.length > 0) {
+          showSuccess('Base de datos conectada correctamente', 'Sistema Listo');
+        }
+        
       } catch (error) {
         console.error('Error loading data:', error);
-        setError(error instanceof Error ? error.message : 'Error al cargar datos');
+        showError(error instanceof Error ? error.message : 'Error al cargar datos');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadData();
-  }, [page, rowsPerPage, searchTerm, isDatabaseReady]);
+  }, [page, rowsPerPage, searchTerm]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -189,8 +186,9 @@ const UserManagement: React.FC = () => {
       setTotalUsers(usersResponse.total);
       setDeleteDialogOpen(false);
       setSelectedUser(null);
+      showSuccess('Usuario eliminado correctamente');
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al eliminar usuario');
+      showError(error instanceof Error ? error.message : 'Error al eliminar usuario');
     }
   };
 
@@ -221,14 +219,6 @@ const UserManagement: React.FC = () => {
   return (
     <Container maxWidth={false}>
       <Box sx={{ py: 4 }}>
-        {/* Database Status Check */}
-        <DatabaseStatus onStatusChange={setIsDatabaseReady} />
-        
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
 
         {/* Actions Bar */}
         <Card sx={{ mb: 3 }}>

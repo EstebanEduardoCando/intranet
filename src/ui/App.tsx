@@ -17,6 +17,8 @@ import NewPassword from './pages/NewPassword';
 import Error404 from './pages/Error404';
 import NotFound from './pages/NotFound';
 import PrivateRoute from './routes/PrivateRoute';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationContainer from './components/common/NotificationContainer';
 
 const App: React.FC = () => {
   const mode = useThemeStore((state) => state.mode);
@@ -96,7 +98,8 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
+      <NotificationProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -139,9 +142,9 @@ const App: React.FC = () => {
               }
             />
             
-            {/* HR Module Routes */}
+            {/* Administration Module Routes */}
             <Route
-              path="/hr/employees"
+              path="/administration/users"
               element={
                 <PrivateRoute>
                   <UserManagement />
@@ -213,7 +216,9 @@ const App: React.FC = () => {
           <Route path="/notFound" element={<NotFound />} />
           <Route path="*" element={<Error404 />} />
         </Routes>
+        <NotificationContainer />
       </BrowserRouter>
+    </NotificationProvider>
     </ThemeProvider>
   );
 };
