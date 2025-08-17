@@ -302,28 +302,9 @@ const UserManagement: React.FC = () => {
                       {paginatedUsers.map((user) => (
                         <TableRow key={user.id} hover>
                           <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Avatar sx={{ 
-                                bgcolor: theme.palette.primary.main,
-                                width: 40,
-                                height: 40
-                              }}>
-                                {user.person.firstName.charAt(0)}
-                              </Avatar>
-                              <Box>
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                  {getPersonDisplayName(user.person)}
-                                </Typography>
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                  {user.email}
-                                </Typography>
-                                {user.profile.username && (
-                                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                                    @{user.profile.username}
-                                  </Typography>
-                                )}
-                              </Box>
-                            </Box>
+                            <Typography variant="body2">
+                              {getPersonDisplayName(user.person)}
+                            </Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">

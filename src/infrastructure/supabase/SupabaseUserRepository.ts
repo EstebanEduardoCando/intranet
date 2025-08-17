@@ -412,6 +412,8 @@ export class SupabaseUserRepository implements UserRepository {
       const offset = page * limit;
       const term = `%${searchTerm.toLowerCase()}%`;
 
+      // Get all active users first, then filter in memory for now
+      // TODO: Optimize with proper full-text search or multiple queries
       const { data, error } = await supabase
         .from('user_profiles')
         .select(`
@@ -440,31 +442,37 @@ export class SupabaseUserRepository implements UserRepository {
           )
         `)
         .eq('is_active', true)
-        .or(`persons.first_name.ilike.${term},persons.last_name.ilike.${term},persons.identity_number.ilike.${term},username.ilike.${term}`)
-        .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
       if (error) {
         throw new Error(`Failed to search users: ${error.message}`);
       }
 
+      // Filter data in memory based on search term
+      const filteredData = data.filter(profile => {
+        const userEmail = (profile.persons as any).email || '';
+        const firstName = (profile.persons as any).first_name?.toLowerCase() || '';
+        const lastName = (profile.persons as any).last_name?.toLowerCase() || '';
+        const identityNumber = (profile.persons as any).identity_number || '';
+        const username = profile.username?.toLowerCase() || '';
+        
+        const searchLower = searchTerm.toLowerCase();
+        
+        return firstName.includes(searchLower) ||
+               lastName.includes(searchLower) ||
+               identityNumber.includes(searchTerm) ||
+               username.includes(searchLower) ||
+               userEmail.toLowerCase().includes(searchLower);
+      });
+
+      // Apply pagination to filtered results
+      const paginatedData = filteredData.slice(offset, offset + limit);
+
       const users: User[] = [];
       
-      for (const profile of data) {
+      for (const profile of paginatedData) {
         // Use email from persons table since admin access is not available
         const userEmail = (profile.persons as any).email || `user${profile.user_id.substring(0, 8)}@example.com`;
-
-        // Also search by email
-        if (searchTerm && !userEmail.toLowerCase().includes(searchTerm.toLowerCase())) {
-          // Skip if email doesn't match search term
-          const personMatches = 
-            (profile.persons as any).first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (profile.persons as any).last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (profile.persons as any).identity_number?.includes(searchTerm) ||
-            profile.username?.toLowerCase().includes(searchTerm.toLowerCase());
-          
-          if (!personMatches) continue;
-        }
 
         // Get roles for this user
         const { data: rolesData } = await supabase
