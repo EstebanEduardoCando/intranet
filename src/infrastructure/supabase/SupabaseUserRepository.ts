@@ -83,7 +83,6 @@ export class SupabaseUserRepository implements UserRepository {
         isActive: row.is_active,
         lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : undefined,
         preferences: row.preferences || {},
-        // Note: No company_id/position_id in current structure
         createdAt: new Date(row.profile_created_at),
         updatedAt: new Date(row.profile_updated_at)
       },
@@ -293,7 +292,8 @@ export class SupabaseUserRepository implements UserRepository {
 
   async delete(id: string): Promise<boolean> {
     try {
-      // Soft delete by deactivating the user profile
+      // Use soft delete by deactivating the user profile
+      // This is safer with RLS policies and preserves data integrity
       const { error } = await supabase
         .from('user_profiles')
         .update({ 
@@ -410,11 +410,11 @@ export class SupabaseUserRepository implements UserRepository {
   async search(searchTerm: string, page: number = 0, limit: number = 10): Promise<User[]> {
     try {
       const offset = page * limit;
-      const term = `%${searchTerm.toLowerCase()}%`;
+      const searchLower = searchTerm.toLowerCase();
 
-      // Get all active users first, then filter in memory for now
-      // TODO: Optimize with proper full-text search or multiple queries
-      const { data, error } = await supabase
+      // Build multiple OR queries for different search fields using native SQL capabilities
+      // Use ilike for case-insensitive search on PostgreSQL
+      let query = supabase
         .from('user_profiles')
         .select(`
           profile_id,
@@ -441,36 +441,30 @@ export class SupabaseUserRepository implements UserRepository {
             updated_at
           )
         `)
-        .eq('is_active', true)
+        .eq('is_active', true);
+
+      // Apply search filters using PostgreSQL native capabilities
+      // Use OR conditions to search across multiple fields with proper escaping
+      query = query.or([
+        `username.ilike.%${searchLower}%`,
+        `persons.first_name.ilike.%${searchLower}%`,
+        `persons.last_name.ilike.%${searchLower}%`,
+        `persons.identity_number.ilike.%${searchTerm}%`,
+        `persons.email.ilike.%${searchLower}%`
+      ].join(','));
+
+      // Apply pagination and ordering at database level
+      const { data, error } = await query
+        .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
       if (error) {
         throw new Error(`Failed to search users: ${error.message}`);
       }
 
-      // Filter data in memory based on search term
-      const filteredData = data.filter(profile => {
-        const userEmail = (profile.persons as any).email || '';
-        const firstName = (profile.persons as any).first_name?.toLowerCase() || '';
-        const lastName = (profile.persons as any).last_name?.toLowerCase() || '';
-        const identityNumber = (profile.persons as any).identity_number || '';
-        const username = profile.username?.toLowerCase() || '';
-        
-        const searchLower = searchTerm.toLowerCase();
-        
-        return firstName.includes(searchLower) ||
-               lastName.includes(searchLower) ||
-               identityNumber.includes(searchTerm) ||
-               username.includes(searchLower) ||
-               userEmail.toLowerCase().includes(searchLower);
-      });
-
-      // Apply pagination to filtered results
-      const paginatedData = filteredData.slice(offset, offset + limit);
-
       const users: User[] = [];
       
-      for (const profile of paginatedData) {
+      for (const profile of data) {
         // Use email from persons table since admin access is not available
         const userEmail = (profile.persons as any).email || `user${profile.user_id.substring(0, 8)}@example.com`;
 

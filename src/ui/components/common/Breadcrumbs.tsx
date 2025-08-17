@@ -60,6 +60,11 @@ const Breadcrumbs: React.FC = () => {
       { label: 'Administración' },
       { label: 'Gestión de Usuarios' }
     ],
+    '/administration/users': [
+      { label: 'Inicio', path: '/dashboard', icon: <HomeIcon fontSize="small" /> },
+      { label: 'Administración' },
+      { label: 'Gestión de Usuarios' }
+    ],
     '/admin/companies': [
       { label: 'Inicio', path: '/dashboard', icon: <HomeIcon fontSize="small" /> },
       { label: 'Administración' },

@@ -13,6 +13,12 @@ export interface RemoveRoleRequest {
   roleId: number;
 }
 
+export interface ManageUserRolesRequest {
+  userId: string;
+  roleIds: number[];
+  assignedBy?: string;
+}
+
 export class ManageUserRoles {
   constructor(
     private userRepository: UserRepository,
@@ -110,6 +116,48 @@ export class ManageUserRoles {
       return await this.roleRepository.findByUserId(userId);
     } catch (error) {
       throw new Error(`Error fetching user roles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async execute(request: ManageUserRolesRequest): Promise<void> {
+    const { userId, roleIds, assignedBy } = request;
+
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      // Check if user exists
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Get current user roles
+      const currentRoles = await this.roleRepository.findByUserId(userId);
+      const currentRoleIds = currentRoles.map(r => r.roleId);
+
+      // Remove roles that are no longer selected
+      for (const currentRoleId of currentRoleIds) {
+        if (!roleIds.includes(currentRoleId)) {
+          await this.roleRepository.removeFromUser(userId, currentRoleId);
+        }
+      }
+
+      // Add new roles
+      for (const roleId of roleIds) {
+        if (!currentRoleIds.includes(roleId)) {
+          // Check if role exists
+          const role = await this.roleRepository.findById(roleId);
+          if (!role) {
+            throw new Error(`Role with ID ${roleId} not found`);
+          }
+          
+          await this.roleRepository.assignToUser(userId, roleId, assignedBy);
+        }
+      }
+    } catch (error) {
+      throw new Error(`Error managing user roles: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

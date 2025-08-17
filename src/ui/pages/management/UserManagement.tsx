@@ -29,7 +29,13 @@ import {
   Alert,
   CircularProgress,
   useTheme,
-  alpha
+  alpha,
+  FormControl,
+  InputLabel,
+  Select,
+  Divider,
+  Grid,
+  FormHelperText
 } from '@mui/material';
 import { useNotifications } from '../../contexts/NotificationContext';
 import {
@@ -54,28 +60,38 @@ import { DeleteUser } from '../../../application/user/DeleteUser';
 import { AssignUserCompany } from '../../../application/user/AssignUserCompany';
 import { AssignUserPosition } from '../../../application/user/AssignUserPosition';
 import { ManageUserRoles } from '../../../application/user/ManageUserRoles';
+import { UpdateUserProfile } from '../../../application/user/UpdateUserProfile';
+import { RegisterUser } from '../../../application/auth/RegisterUser';
 import { GetCompanies } from '../../../application/company/GetCompanies';
 import { GetPositions } from '../../../application/position/GetPositions';
 import { GetRoles } from '../../../application/role/GetRoles';
 import { SupabaseUserRepository } from '../../../infrastructure/supabase/SupabaseUserRepository';
+import { SupabasePersonRepository } from '../../../infrastructure/supabase/SupabasePersonRepository';
+import { SupabaseUserProfileRepository } from '../../../infrastructure/supabase/SupabaseUserProfileRepository';
 import { SupabaseCompanyRepository } from '../../../infrastructure/supabase/SupabaseCompanyRepository';
 import { SupabasePositionRepository } from '../../../infrastructure/supabase/SupabasePositionRepository';
 import { SupabaseRoleRepository } from '../../../infrastructure/supabase/SupabaseRoleRepository';
+import { SupabaseAuthService } from '../../../infrastructure/supabase/SupabaseAuthService';
 
 // Initialize repositories and use cases
 const userRepository = new SupabaseUserRepository();
+const personRepository = new SupabasePersonRepository();
+const userProfileRepository = new SupabaseUserProfileRepository();
 const companyRepository = new SupabaseCompanyRepository();
 const positionRepository = new SupabasePositionRepository();
 const roleRepository = new SupabaseRoleRepository();
+const authService = new SupabaseAuthService();
 
 const getUsers = new GetUsers(userRepository);
 const deleteUser = new DeleteUser(userRepository);
 const assignUserCompany = new AssignUserCompany(userRepository, companyRepository);
 const assignUserPosition = new AssignUserPosition(userRepository, positionRepository);
 const manageUserRoles = new ManageUserRoles(userRepository, roleRepository);
+const updateUserProfile = new UpdateUserProfile(personRepository, userProfileRepository);
 const getCompanies = new GetCompanies(companyRepository);
 const getPositions = new GetPositions(positionRepository);
 const getRoles = new GetRoles(roleRepository);
+const registerUser = new RegisterUser(authService);
 
 const UserManagement: React.FC = () => {
   const theme = useTheme();
@@ -89,9 +105,60 @@ const UserManagement: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [assignCompanyDialogOpen, setAssignCompanyDialogOpen] = useState(false);
+  const [assignPositionDialogOpen, setAssignPositionDialogOpen] = useState(false);
+  const [manageRolesDialogOpen, setManageRolesDialogOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  
+  // Filter states
+  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+  const [activeFilters, setActiveFilters] = useState({
+    status: 'all', // 'all', 'active', 'inactive'
+    company: 'all',
+    position: 'all',
+    role: 'all'
+  });
+  
+  // New user form states
+  const [newUserForm, setNewUserForm] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    secondLastName: '',
+    identityType: 'CC',
+    identityNumber: '',
+    phone: '',
+    username: ''
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  
+  // Edit user form states
+  const [editUserForm, setEditUserForm] = useState({
+    email: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    secondLastName: '',
+    identityType: 'CC',
+    identityNumber: '',
+    phone: '',
+    username: ''
+  });
+  const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({});
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+  
+  // Assignment form states
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [selectedPositionId, setSelectedPositionId] = useState('');
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
   // Load users and related data
   useEffect(() => {
     const loadData = async () => {
@@ -140,6 +207,37 @@ const UserManagement: React.FC = () => {
     setPage(0); // Reset to first page when searching
   };
 
+  // Filter functions
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleFilterChange = (filterType: keyof typeof activeFilters, value: string) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+    setPage(0); // Reset to first page when filtering
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters({
+      status: 'all',
+      company: 'all',
+      position: 'all',
+      role: 'all'
+    });
+    setPage(0);
+  };
+
+  const getActiveFilterCount = () => {
+    return Object.values(activeFilters).filter(value => value !== 'all').length;
+  };
+
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -156,11 +254,30 @@ const UserManagement: React.FC = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-    setSelectedUser(null);
+    // Don't clear selectedUser here as it's needed for dialogs
   };
 
   const handleEdit = () => {
-    console.log('Edit user:', selectedUser);
+    if (!selectedUser) {
+      showError('No hay usuario seleccionado para editar');
+      return;
+    }
+    
+    // Populate edit form with current user data
+    setEditUserForm({
+      email: selectedUser.email,
+      firstName: selectedUser.person.firstName,
+      middleName: selectedUser.person.middleName || '',
+      lastName: selectedUser.person.lastName,
+      secondLastName: selectedUser.person.secondLastName || '',
+      identityType: selectedUser.person.identityType,
+      identityNumber: selectedUser.person.identityNumber,
+      phone: selectedUser.person.phone || '',
+      username: selectedUser.profile.username || ''
+    });
+    
+    setEditFormErrors({});
+    setEditUserDialogOpen(true);
     handleMenuClose();
   };
 
@@ -170,10 +287,89 @@ const UserManagement: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser) {
+      console.error('No selected user for deletion');
+      return;
+    }
+    
+    console.log('Attempting to delete user:', selectedUser.id);
     
     try {
-      await deleteUser.execute({ userId: selectedUser.id });
+      const result = await deleteUser.execute({ userId: selectedUser.id });
+      console.log('Delete result:', result);
+      
+      if (result) {
+        // Calculate if we need to adjust page after deletion
+        const currentItemCount = filteredUsers.length;
+        const isLastItemOnPage = currentItemCount === 1 && page > 0;
+        const newPage = isLastItemOnPage ? page - 1 : page;
+        
+        console.log('Refreshing users list...');
+        
+        // Refresh users list
+        const usersResponse = await getUsers.execute({
+          page: newPage,
+          limit: rowsPerPage,
+          searchTerm: searchTerm || undefined
+        });
+        
+        console.log('Users refreshed:', usersResponse.users.length);
+        
+        setUsers(usersResponse.users);
+        setTotalUsers(usersResponse.total);
+        
+        // Update page if needed
+        if (newPage !== page) {
+          setPage(newPage);
+        }
+        
+        setDeleteDialogOpen(false);
+        setSelectedUser(null);
+        showSuccess('Usuario desactivado correctamente');
+      } else {
+        throw new Error('Delete operation failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      showError(error instanceof Error ? error.message : 'Error al eliminar usuario');
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
+  const handleAssignCompany = async () => {
+    if (!selectedUser) return;
+    
+    setSelectedCompanyId(selectedUser.company?.companyId?.toString() || '');
+    setAssignCompanyDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleAssignPosition = async () => {
+    if (!selectedUser) return;
+    
+    setSelectedPositionId(selectedUser.position?.positionId?.toString() || '');
+    setAssignPositionDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleManageRoles = async () => {
+    if (!selectedUser) return;
+    
+    setSelectedRoleIds(selectedUser.roles.map(role => role.roleId.toString()));
+    setManageRolesDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const confirmAssignCompany = async () => {
+    if (!selectedUser || !selectedCompanyId) return;
+    
+    setIsAssigning(true);
+    try {
+      await assignUserCompany.execute({
+        userId: selectedUser.id,
+        companyId: parseInt(selectedCompanyId)
+      });
       
       // Refresh users list
       const usersResponse = await getUsers.execute({
@@ -184,37 +380,373 @@ const UserManagement: React.FC = () => {
       
       setUsers(usersResponse.users);
       setTotalUsers(usersResponse.total);
-      setDeleteDialogOpen(false);
+      setAssignCompanyDialogOpen(false);
       setSelectedUser(null);
-      showSuccess('Usuario eliminado correctamente');
+      showSuccess('Empresa asignada correctamente');
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Error al eliminar usuario');
+      console.error('Assign company error:', error);
+      showError(error instanceof Error ? error.message : 'Error al asignar empresa');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
-  const handleAssignCompany = async () => {
-    if (!selectedUser) return;
+  const confirmAssignPosition = async () => {
+    if (!selectedUser || !selectedPositionId) return;
     
-    console.log('Assign company to user:', selectedUser);
-    handleMenuClose();
+    setIsAssigning(true);
+    try {
+      await assignUserPosition.execute({
+        userId: selectedUser.id,
+        positionId: parseInt(selectedPositionId)
+      });
+      
+      // Refresh users list
+      const usersResponse = await getUsers.execute({
+        page,
+        limit: rowsPerPage,
+        searchTerm: searchTerm || undefined
+      });
+      
+      setUsers(usersResponse.users);
+      setTotalUsers(usersResponse.total);
+      setAssignPositionDialogOpen(false);
+      setSelectedUser(null);
+      showSuccess('Cargo asignado correctamente');
+    } catch (error) {
+      console.error('Assign position error:', error);
+      showError(error instanceof Error ? error.message : 'Error al asignar cargo');
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
-  const handleAssignPosition = async () => {
-    if (!selectedUser) return;
+  const confirmManageRoles = async () => {
+    if (!selectedUser) {
+      console.error('confirmManageRoles: No selectedUser');
+      showError('No hay usuario seleccionado');
+      return;
+    }
     
-    console.log('Assign position to user:', selectedUser);
-    handleMenuClose();
+    console.log('confirmManageRoles: Starting', {
+      userId: selectedUser.id,
+      selectedRoleIds,
+      currentRoles: selectedUser.roles
+    });
+    
+    setIsAssigning(true);
+    try {
+      const roleIds = selectedRoleIds.map(id => parseInt(id));
+      console.log('confirmManageRoles: Parsed roleIds', roleIds);
+      
+      await manageUserRoles.execute({
+        userId: selectedUser.id,
+        roleIds
+      });
+      
+      console.log('confirmManageRoles: Success, refreshing users');
+      
+      // Refresh users list
+      const usersResponse = await getUsers.execute({
+        page,
+        limit: rowsPerPage,
+        searchTerm: searchTerm || undefined
+      });
+      
+      setUsers(usersResponse.users);
+      setTotalUsers(usersResponse.total);
+      setManageRolesDialogOpen(false);
+      setSelectedUser(null);
+      showSuccess('Roles actualizados correctamente');
+    } catch (error) {
+      console.error('Manage roles error:', error);
+      showError(error instanceof Error ? error.message : 'Error al gestionar roles');
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
-  const handleManageRoles = async () => {
-    if (!selectedUser) return;
-    
-    console.log('Manage roles for user:', selectedUser);
-    handleMenuClose();
+  // New user form handlers
+  const handleNewUserClick = () => {
+    setNewUserDialogOpen(true);
+    resetNewUserForm();
   };
 
-  // Users are already filtered and paginated by the backend
-  const paginatedUsers = users;
+  const resetNewUserForm = () => {
+    setNewUserForm({
+      email: '',
+      password: '',
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      secondLastName: '',
+      identityType: 'CC',
+      identityNumber: '',
+      phone: '',
+      username: ''
+    });
+    setFormErrors({});
+  };
+
+  const handleNewUserFormChange = (field: string, value: string) => {
+    setNewUserForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear field error when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+  };
+
+  const validateNewUserForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!newUserForm.email.trim()) {
+      errors.email = 'Email es requerido';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newUserForm.email)) {
+      errors.email = 'Formato de email inválido';
+    }
+
+    if (!newUserForm.password.trim()) {
+      errors.password = 'Contraseña es requerida';
+    } else if (newUserForm.password.length < 8) {
+      errors.password = 'Contraseña debe tener al menos 8 caracteres';
+    }
+
+    if (!newUserForm.firstName.trim()) {
+      errors.firstName = 'Nombre es requerido';
+    } else if (newUserForm.firstName.trim().length < 2) {
+      errors.firstName = 'Nombre debe tener al menos 2 caracteres';
+    }
+
+    if (!newUserForm.lastName.trim()) {
+      errors.lastName = 'Apellido es requerido';
+    } else if (newUserForm.lastName.trim().length < 2) {
+      errors.lastName = 'Apellido debe tener al menos 2 caracteres';
+    }
+
+    if (!newUserForm.identityNumber.trim()) {
+      errors.identityNumber = 'Número de documento es requerido';
+    } else if (newUserForm.identityNumber.trim().length < 3) {
+      errors.identityNumber = 'Número de documento debe tener al menos 3 caracteres';
+    }
+
+    if (newUserForm.username && newUserForm.username.trim().length < 3) {
+      errors.username = 'Usuario debe tener al menos 3 caracteres';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCreateUser = async () => {
+    if (!validateNewUserForm()) {
+      return;
+    }
+
+    setIsCreatingUser(true);
+    
+    try {
+      const userData = {
+        email: newUserForm.email.trim(),
+        password: newUserForm.password,
+        person: {
+          firstName: newUserForm.firstName.trim(),
+          middleName: newUserForm.middleName.trim() || undefined,
+          lastName: newUserForm.lastName.trim(),
+          secondLastName: newUserForm.secondLastName.trim() || undefined,
+          identityType: newUserForm.identityType as any,
+          identityNumber: newUserForm.identityNumber.trim(),
+          phone: newUserForm.phone.trim() || undefined
+        },
+        username: newUserForm.username.trim() || undefined
+      };
+
+      await registerUser.execute(userData);
+      
+      // Refresh users list
+      const usersResponse = await getUsers.execute({
+        page: 0, // Reset to first page to see new user
+        limit: rowsPerPage,
+        searchTerm: searchTerm || undefined
+      });
+      
+      setUsers(usersResponse.users);
+      setTotalUsers(usersResponse.total);
+      setPage(0); // Reset to first page
+      
+      setNewUserDialogOpen(false);
+      resetNewUserForm();
+      showSuccess('Usuario creado correctamente');
+    } catch (error) {
+      console.error('Create user error:', error);
+      showError(error instanceof Error ? error.message : 'Error al crear usuario');
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  // Edit user functions
+  const handleEditUserFormChange = (field: string, value: string) => {
+    setEditUserForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear field error when user starts typing
+    if (editFormErrors[field]) {
+      setEditFormErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+  };
+
+  const validateEditUserForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!editUserForm.firstName.trim()) {
+      errors.firstName = 'Nombre es requerido';
+    } else if (editUserForm.firstName.trim().length < 2) {
+      errors.firstName = 'Nombre debe tener al menos 2 caracteres';
+    }
+
+    if (!editUserForm.lastName.trim()) {
+      errors.lastName = 'Apellido es requerido';
+    } else if (editUserForm.lastName.trim().length < 2) {
+      errors.lastName = 'Apellido debe tener al menos 2 caracteres';
+    }
+
+    if (!editUserForm.identityNumber.trim()) {
+      errors.identityNumber = 'Número de documento es requerido';
+    } else if (editUserForm.identityNumber.trim().length < 3) {
+      errors.identityNumber = 'Número de documento debe tener al menos 3 caracteres';
+    }
+
+    if (editUserForm.username && editUserForm.username.trim().length < 3) {
+      errors.username = 'Usuario debe tener al menos 3 caracteres';
+    }
+
+    setEditFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser || !validateEditUserForm()) {
+      return;
+    }
+
+    setIsUpdatingUser(true);
+    
+    try {
+      const updateData = {
+        person: {
+          firstName: editUserForm.firstName.trim(),
+          middleName: editUserForm.middleName.trim() || undefined,
+          lastName: editUserForm.lastName.trim(),
+          secondLastName: editUserForm.secondLastName.trim() || undefined,
+          identityType: editUserForm.identityType as any,
+          identityNumber: editUserForm.identityNumber.trim(),
+          phone: editUserForm.phone.trim() || undefined
+        },
+        profile: {
+          username: editUserForm.username.trim() || undefined
+        }
+      };
+
+      await updateUserProfile.execute(selectedUser.id, updateData);
+      
+      // Refresh user list
+      const usersResponse = await getUsers.execute({
+        page,
+        limit: rowsPerPage,
+        searchTerm: searchTerm || undefined
+      });
+      
+      setUsers(usersResponse.users);
+      setTotalUsers(usersResponse.total);
+      
+      setEditUserDialogOpen(false);
+      setSelectedUser(null);
+      showSuccess('Usuario actualizado correctamente');
+    } catch (error) {
+      console.error('Update user error:', error);
+      showError(error instanceof Error ? error.message : 'Error al actualizar usuario');
+    } finally {
+      setIsUpdatingUser(false);
+    }
+  };
+
+  const handleCancelEditUser = () => {
+    setEditUserDialogOpen(false);
+    setEditUserForm({
+      email: '',
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      secondLastName: '',
+      identityType: 'CC',
+      identityNumber: '',
+      phone: '',
+      username: ''
+    });
+    setEditFormErrors({});
+    setSelectedUser(null);
+  };
+
+  // Filter users based on search term and filters (client-side)
+  const filteredUsers = users.filter(user => {
+    // Search term filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = (
+        user.person.firstName.toLowerCase().includes(searchLower) ||
+        user.person.lastName.toLowerCase().includes(searchLower) ||
+        user.person.identityNumber.includes(searchTerm) ||
+        user.email.toLowerCase().includes(searchLower) ||
+        (user.profile.username && user.profile.username.toLowerCase().includes(searchLower))
+      );
+      if (!matchesSearch) return false;
+    }
+
+    // Status filter
+    if (activeFilters.status !== 'all') {
+      const isActive = user.profile.isActive;
+      if (activeFilters.status === 'active' && !isActive) return false;
+      if (activeFilters.status === 'inactive' && isActive) return false;
+    }
+
+    // Role filter
+    if (activeFilters.role !== 'all') {
+      const hasRole = user.roles.some(role => role.roleId.toString() === activeFilters.role);
+      if (!hasRole) return false;
+    }
+
+    // Company filter
+    if (activeFilters.company !== 'all') {
+      const userCompanyId = user.company?.companyId?.toString();
+      if (userCompanyId !== activeFilters.company) return false;
+    }
+
+    // Position filter
+    if (activeFilters.position !== 'all') {
+      const userPositionId = user.position?.positionId?.toString();
+      if (userPositionId !== activeFilters.position) return false;
+    }
+
+    return true;
+  });
+
+  // Client-side pagination
+  const paginatedUsers = filteredUsers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
     <Container maxWidth={false}>
@@ -248,15 +780,164 @@ const UserManagement: React.FC = () => {
                 <Button
                   variant="outlined"
                   startIcon={<FilterListIcon />}
+                  onClick={handleFilterClick}
                   sx={{ whiteSpace: 'nowrap' }}
                 >
-                  Filtros
+                  Filtros {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
                 </Button>
+                
+                {/* Filter Menu */}
+                <Menu
+                  anchorEl={filterAnchorEl}
+                  open={Boolean(filterAnchorEl)}
+                  onClose={handleFilterClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                  }}
+                  PaperProps={{
+                    sx: { 
+                      width: 280,
+                      p: 2
+                    }
+                  }}
+                >
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Filtros Avanzados
+                    </Typography>
+                    
+                    {/* Status Filter */}
+                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                      <InputLabel>Estado</InputLabel>
+                      <Select
+                        value={activeFilters.status}
+                        label="Estado"
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                      >
+                        <MenuItem value="all">Todos</MenuItem>
+                        <MenuItem value="active">Activos</MenuItem>
+                        <MenuItem value="inactive">Inactivos</MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    {/* Role Filter */}
+                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                      <InputLabel>Rol</InputLabel>
+                      <Select
+                        value={activeFilters.role}
+                        label="Rol"
+                        onChange={(e) => handleFilterChange('role', e.target.value)}
+                      >
+                        <MenuItem value="all">Todos los Roles</MenuItem>
+                        {roles.map((role) => (
+                          <MenuItem key={role.roleId} value={role.roleId.toString()}>
+                            {role.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    {/* Company Filter */}
+                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                      <InputLabel>Empresa</InputLabel>
+                      <Select
+                        value={activeFilters.company}
+                        label="Empresa"
+                        onChange={(e) => handleFilterChange('company', e.target.value)}
+                      >
+                        <MenuItem value="all">Todas las Empresas</MenuItem>
+                        {companies.map((company) => (
+                          <MenuItem key={company.companyId} value={company.companyId.toString()}>
+                            {company.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    {/* Position Filter */}
+                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                      <InputLabel>Cargo</InputLabel>
+                      <Select
+                        value={activeFilters.position}
+                        label="Cargo"
+                        onChange={(e) => handleFilterChange('position', e.target.value)}
+                      >
+                        <MenuItem value="all">Todos los Cargos</MenuItem>
+                        {positions.map((position) => (
+                          <MenuItem key={position.positionId} value={position.positionId.toString()}>
+                            {position.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <Divider sx={{ my: 1 }} />
+                    
+                    {/* Active Filters Display */}
+                    {getActiveFilterCount() > 0 && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', mb: 1, display: 'block' }}>
+                          Filtros Activos:
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {activeFilters.status !== 'all' && (
+                            <Chip 
+                              label={`Estado: ${activeFilters.status === 'active' ? 'Activos' : 'Inactivos'}`}
+                              size="small" 
+                              onDelete={() => handleFilterChange('status', 'all')}
+                            />
+                          )}
+                          {activeFilters.role !== 'all' && (
+                            <Chip 
+                              label={`Rol: ${roles.find(r => r.roleId.toString() === activeFilters.role)?.name}`}
+                              size="small" 
+                              onDelete={() => handleFilterChange('role', 'all')}
+                            />
+                          )}
+                          {activeFilters.company !== 'all' && (
+                            <Chip 
+                              label={`Empresa: ${companies.find(c => c.companyId.toString() === activeFilters.company)?.name}`}
+                              size="small" 
+                              onDelete={() => handleFilterChange('company', 'all')}
+                            />
+                          )}
+                          {activeFilters.position !== 'all' && (
+                            <Chip 
+                              label={`Cargo: ${positions.find(p => p.positionId.toString() === activeFilters.position)?.name}`}
+                              size="small" 
+                              onDelete={() => handleFilterChange('position', 'all')}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    )}
+                    
+                    {/* Clear All Filters Button */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Button
+                        size="small"
+                        onClick={clearAllFilters}
+                        disabled={getActiveFilterCount() === 0}
+                      >
+                        Limpiar Todo
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={handleFilterClose}
+                      >
+                        Aplicar
+                      </Button>
+                    </Box>
+                  </Box>
+                </Menu>
               </Box>
               
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
+                onClick={handleNewUserClick}
                 sx={{ whiteSpace: 'nowrap' }}
               >
                 Nuevo Usuario
@@ -352,7 +1033,7 @@ const UserManagement: React.FC = () => {
                 <TablePagination
                   rowsPerPageOptions={[5, 10, 25]}
                   component="div"
-                  count={totalUsers}
+                  count={filteredUsers.length}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={handleChangePage}
@@ -379,17 +1060,17 @@ const UserManagement: React.FC = () => {
             </ListItemIcon>
             <ListItemText>Editar Usuario</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleAssignCompany}>
+          <MenuItem onClick={handleAssignCompany} disabled>
             <ListItemIcon>
               <BusinessIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Asignar Empresa</ListItemText>
+            <ListItemText>Asignar Empresa (Próximamente)</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleAssignPosition}>
+          <MenuItem onClick={handleAssignPosition} disabled>
             <ListItemIcon>
               <WorkIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Asignar Cargo</ListItemText>
+            <ListItemText>Asignar Cargo (Próximamente)</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleManageRoles}>
             <ListItemIcon>
@@ -428,6 +1109,439 @@ const UserManagement: React.FC = () => {
             </Button>
             <Button onClick={confirmDelete} color="error" variant="contained">
               Eliminar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* New User Dialog */}
+        <Dialog
+          open={newUserDialogOpen}
+          onClose={() => !isCreatingUser && setNewUserDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              {/* Email */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Email *"
+                  type="email"
+                  value={newUserForm.email}
+                  onChange={(e) => handleNewUserFormChange('email', e.target.value)}
+                  error={!!formErrors.email}
+                  helperText={formErrors.email}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* Password */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Contraseña *"
+                  type="password"
+                  value={newUserForm.password}
+                  onChange={(e) => handleNewUserFormChange('password', e.target.value)}
+                  error={!!formErrors.password}
+                  helperText={formErrors.password}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* First Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Primer Nombre *"
+                  value={newUserForm.firstName}
+                  onChange={(e) => handleNewUserFormChange('firstName', e.target.value)}
+                  error={!!formErrors.firstName}
+                  helperText={formErrors.firstName}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* Middle Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Segundo Nombre"
+                  value={newUserForm.middleName}
+                  onChange={(e) => handleNewUserFormChange('middleName', e.target.value)}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* Last Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Primer Apellido *"
+                  value={newUserForm.lastName}
+                  onChange={(e) => handleNewUserFormChange('lastName', e.target.value)}
+                  error={!!formErrors.lastName}
+                  helperText={formErrors.lastName}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* Second Last Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Segundo Apellido"
+                  value={newUserForm.secondLastName}
+                  onChange={(e) => handleNewUserFormChange('secondLastName', e.target.value)}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* Identity Type */}
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Tipo de Documento *</InputLabel>
+                  <Select
+                    value={newUserForm.identityType}
+                    label="Tipo de Documento *"
+                    onChange={(e) => handleNewUserFormChange('identityType', e.target.value)}
+                    disabled={isCreatingUser}
+                  >
+                    <MenuItem value="CC">Cédula de Ciudadanía</MenuItem>
+                    <MenuItem value="CE">Cédula de Extranjería</MenuItem>
+                    <MenuItem value="TI">Tarjeta de Identidad</MenuItem>
+                    <MenuItem value="PA">Pasaporte</MenuItem>
+                    <MenuItem value="OTHER">Otro</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Identity Number */}
+              <Grid item xs={12} md={8}>
+                <TextField
+                  fullWidth
+                  label="Número de Documento *"
+                  value={newUserForm.identityNumber}
+                  onChange={(e) => handleNewUserFormChange('identityNumber', e.target.value)}
+                  error={!!formErrors.identityNumber}
+                  helperText={formErrors.identityNumber}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* Phone */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Teléfono"
+                  value={newUserForm.phone}
+                  onChange={(e) => handleNewUserFormChange('phone', e.target.value)}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+
+              {/* Username */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Nombre de Usuario"
+                  value={newUserForm.username}
+                  onChange={(e) => handleNewUserFormChange('username', e.target.value)}
+                  error={!!formErrors.username}
+                  helperText={formErrors.username || 'Opcional. Si se deja vacío, se usará el email'}
+                  disabled={isCreatingUser}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setNewUserDialogOpen(false)}
+              disabled={isCreatingUser}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleCreateUser} 
+              variant="contained"
+              disabled={isCreatingUser}
+              startIcon={isCreatingUser ? <CircularProgress size={20} /> : <PersonAddIcon />}
+            >
+              {isCreatingUser ? 'Creando...' : 'Crear Usuario'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit User Dialog */}
+        <Dialog
+          open={editUserDialogOpen}
+          onClose={() => !isUpdatingUser && handleCancelEditUser()}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Editar Usuario</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              {/* Email (Read-only) */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  value={editUserForm.email}
+                  disabled={true}
+                  helperText="El email no se puede modificar"
+                />
+              </Grid>
+
+              {/* Username */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Nombre de Usuario"
+                  value={editUserForm.username}
+                  onChange={(e) => handleEditUserFormChange('username', e.target.value)}
+                  error={!!editFormErrors.username}
+                  helperText={editFormErrors.username || 'Opcional. Si se deja vacío, se usará el email'}
+                  disabled={isUpdatingUser}
+                />
+              </Grid>
+
+              {/* First Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Primer Nombre *"
+                  value={editUserForm.firstName}
+                  onChange={(e) => handleEditUserFormChange('firstName', e.target.value)}
+                  error={!!editFormErrors.firstName}
+                  helperText={editFormErrors.firstName}
+                  disabled={isUpdatingUser}
+                />
+              </Grid>
+
+              {/* Middle Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Segundo Nombre"
+                  value={editUserForm.middleName}
+                  onChange={(e) => handleEditUserFormChange('middleName', e.target.value)}
+                  disabled={isUpdatingUser}
+                />
+              </Grid>
+
+              {/* Last Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Primer Apellido *"
+                  value={editUserForm.lastName}
+                  onChange={(e) => handleEditUserFormChange('lastName', e.target.value)}
+                  error={!!editFormErrors.lastName}
+                  helperText={editFormErrors.lastName}
+                  disabled={isUpdatingUser}
+                />
+              </Grid>
+
+              {/* Second Last Name */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Segundo Apellido"
+                  value={editUserForm.secondLastName}
+                  onChange={(e) => handleEditUserFormChange('secondLastName', e.target.value)}
+                  disabled={isUpdatingUser}
+                />
+              </Grid>
+
+              {/* Identity Type */}
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Tipo de Documento *</InputLabel>
+                  <Select
+                    value={editUserForm.identityType}
+                    label="Tipo de Documento *"
+                    onChange={(e) => handleEditUserFormChange('identityType', e.target.value)}
+                    disabled={isUpdatingUser}
+                  >
+                    <MenuItem value="CC">Cédula de Ciudadanía</MenuItem>
+                    <MenuItem value="CE">Cédula de Extranjería</MenuItem>
+                    <MenuItem value="TI">Tarjeta de Identidad</MenuItem>
+                    <MenuItem value="PA">Pasaporte</MenuItem>
+                    <MenuItem value="OTHER">Otro</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Identity Number */}
+              <Grid item xs={12} md={8}>
+                <TextField
+                  fullWidth
+                  label="Número de Documento *"
+                  value={editUserForm.identityNumber}
+                  onChange={(e) => handleEditUserFormChange('identityNumber', e.target.value)}
+                  error={!!editFormErrors.identityNumber}
+                  helperText={editFormErrors.identityNumber}
+                  disabled={isUpdatingUser}
+                />
+              </Grid>
+
+              {/* Phone */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Teléfono"
+                  value={editUserForm.phone}
+                  onChange={(e) => handleEditUserFormChange('phone', e.target.value)}
+                  disabled={isUpdatingUser}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={handleCancelEditUser}
+              disabled={isUpdatingUser}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateUser} 
+              variant="contained"
+              disabled={isUpdatingUser}
+              startIcon={isUpdatingUser ? <CircularProgress size={20} /> : <EditIcon />}
+            >
+              {isUpdatingUser ? 'Actualizando...' : 'Actualizar Usuario'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Assign Company Dialog */}
+        <Dialog
+          open={assignCompanyDialogOpen}
+          onClose={() => !isAssigning && setAssignCompanyDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Asignar Empresa</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Usuario: <strong>{selectedUser && getPersonDisplayName(selectedUser.person)}</strong>
+            </Typography>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Empresa</InputLabel>
+              <Select
+                value={selectedCompanyId}
+                label="Empresa"
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                disabled={isAssigning}
+              >
+                <MenuItem value="">Sin empresa</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.companyId} value={company.companyId.toString()}>
+                    {company.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAssignCompanyDialogOpen(false)} disabled={isAssigning}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmAssignCompany} variant="contained" disabled={isAssigning}>
+              {isAssigning ? 'Asignando...' : 'Asignar'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Assign Position Dialog */}
+        <Dialog
+          open={assignPositionDialogOpen}
+          onClose={() => !isAssigning && setAssignPositionDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Asignar Cargo</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Usuario: <strong>{selectedUser && getPersonDisplayName(selectedUser.person)}</strong>
+            </Typography>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Cargo</InputLabel>
+              <Select
+                value={selectedPositionId}
+                label="Cargo"
+                onChange={(e) => setSelectedPositionId(e.target.value)}
+                disabled={isAssigning}
+              >
+                <MenuItem value="">Sin cargo</MenuItem>
+                {positions.map((position) => (
+                  <MenuItem key={position.positionId} value={position.positionId.toString()}>
+                    {position.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAssignPositionDialogOpen(false)} disabled={isAssigning}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmAssignPosition} variant="contained" disabled={isAssigning}>
+              {isAssigning ? 'Asignando...' : 'Asignar'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Manage Roles Dialog */}
+        <Dialog
+          open={manageRolesDialogOpen}
+          onClose={() => !isAssigning && setManageRolesDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Gestionar Roles</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Usuario: <strong>{selectedUser && getPersonDisplayName(selectedUser.person)}</strong>
+            </Typography>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Roles</InputLabel>
+              <Select
+                multiple
+                value={selectedRoleIds}
+                label="Roles"
+                onChange={(e) => setSelectedRoleIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                disabled={isAssigning}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => {
+                      const role = roles.find(r => r.roleId.toString() === value);
+                      return (
+                        <Chip key={value} label={role?.name || value} size="small" />
+                      );
+                    })}
+                  </Box>
+                )}
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role.roleId} value={role.roleId.toString()}>
+                    {role.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setManageRolesDialogOpen(false)} disabled={isAssigning}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmManageRoles} variant="contained" disabled={isAssigning}>
+              {isAssigning ? 'Actualizando...' : 'Actualizar'}
             </Button>
           </DialogActions>
         </Dialog>

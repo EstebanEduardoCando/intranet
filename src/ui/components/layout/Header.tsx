@@ -44,6 +44,7 @@ import { useThemeStore } from '../../store/useTheme';
 import { useAuthStore } from '../../store/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { getPersonDisplayName } from '../../../domain/user/Person';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface Props {
   onMenuClick: () => void;
@@ -56,6 +57,7 @@ const Header: React.FC<Props> = ({ onMenuClick, onSidebarToggle, drawerWidth }) 
   const navigate = useNavigate();
   const { mode, toggle: toggleTheme } = useThemeStore();
   const { user, logout } = useAuthStore();
+  const { notificationHistory, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   
   // Helper functions for displaying user information
   const getUserDisplayName = () => {
@@ -90,6 +92,23 @@ const Header: React.FC<Props> = ({ onMenuClick, onSidebarToggle, drawerWidth }) 
 
   const handleNotificationClose = () => {
     setNotificationAnchorEl(null);
+    // Mark all as read when closing notification menu
+    if (unreadCount > 0) {
+      markAllAsRead();
+    }
+  };
+
+  const formatNotificationTime = (timestamp: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Ahora mismo';
+    if (minutes < 60) return `hace ${minutes} min`;
+    if (hours < 24) return `hace ${hours} h`;
+    return `hace ${days} días`;
   };
 
   const handleLogout = () => {
@@ -235,7 +254,11 @@ const Header: React.FC<Props> = ({ onMenuClick, onSidebarToggle, drawerWidth }) 
               '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
             }}
           >
-            <Badge badgeContent={3} color="error">
+            <Badge 
+              badgeContent={unreadCount > 0 ? unreadCount : null} 
+              color="error"
+              max={99}
+            >
               <NotificationsIcon />
             </Badge>
           </IconButton>
@@ -324,7 +347,8 @@ const Header: React.FC<Props> = ({ onMenuClick, onSidebarToggle, drawerWidth }) 
           PaperProps={{
             sx: {
               mt: 1,
-              maxWidth: 320,
+              maxWidth: 380,
+              maxHeight: 500,
               boxShadow: theme.shadows[8]
             }
           }}
@@ -332,26 +356,81 @@ const Header: React.FC<Props> = ({ onMenuClick, onSidebarToggle, drawerWidth }) 
           <Box sx={{ px: 2, py: 1 }}>
             <Typography variant="subtitle2">Notificaciones</Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Tienes 3 notificaciones nuevas
+              {unreadCount > 0 
+                ? `Tienes ${unreadCount} notificación${unreadCount !== 1 ? 'es' : ''} nueva${unreadCount !== 1 ? 's' : ''}`
+                : 'No hay notificaciones nuevas'
+              }
             </Typography>
           </Box>
           <Divider />
-          <MenuItem>
-            <Box>
-              <Typography variant="body2">Nueva actualización disponible</Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                hace 5 minutos
+          {notificationHistory.length === 0 ? (
+            <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                No hay notificaciones
               </Typography>
             </Box>
-          </MenuItem>
-          <MenuItem>
-            <Box>
-              <Typography variant="body2">Sesión iniciada desde nuevo dispositivo</Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                hace 1 hora
-              </Typography>
-            </Box>
-          </MenuItem>
+          ) : (
+            notificationHistory.slice(0, 5).map((notification) => (
+              <MenuItem 
+                key={notification.id}
+                onClick={() => markAsRead(notification.id)}
+                sx={{ 
+                  borderLeft: !notification.isRead ? `3px solid ${theme.palette.primary.main}` : 'none',
+                  bgcolor: !notification.isRead ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.1)
+                  }
+                }}
+              >
+                <Box sx={{ width: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontWeight: !notification.isRead ? 600 : 400,
+                        flex: 1
+                      }}
+                    >
+                      {notification.title || 'Notificación'}
+                    </Typography>
+                    {!notification.isRead && (
+                      <Box 
+                        sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          bgcolor: theme.palette.primary.main 
+                        }} 
+                      />
+                    )}
+                  </Box>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: 'text.secondary',
+                      display: 'block',
+                      mb: 0.5
+                    }}
+                  >
+                    {notification.message}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {notification.timestamp && formatNotificationTime(notification.timestamp)}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))
+          )}
+          {notificationHistory.length > 5 && (
+            <>
+              <Divider />
+              <MenuItem sx={{ justifyContent: 'center' }}>
+                <Typography variant="caption" sx={{ color: 'primary.main' }}>
+                  Ver todas las notificaciones
+                </Typography>
+              </MenuItem>
+            </>
+          )}
         </Menu>
 
         {/* Logout Confirmation Dialog */}
