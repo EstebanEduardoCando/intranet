@@ -15,13 +15,18 @@ interface RoleRow {
 }
 
 /**
- * Database row structure for user_roles table
+ * Database row structure for user_roles table (REAL STRUCTURE)
  */
 interface UserRoleRow {
+  user_role_id?: number;
   user_id: string;
   role_id: number;
-  assigned_at: string;
-  assigned_by: string | null;
+  company_id?: number | null;
+  start_date?: string;
+  end_date?: string | null;
+  created_at?: string;
+  assigned_at?: string;
+  assigned_by?: string | null;
 }
 
 /**
@@ -40,11 +45,11 @@ export class SupabaseRoleRepository implements RoleRepository {
     };
   }
 
-  private mapRowToUserRole(row: UserRoleRow): UserRole {
+  private mapRowToUserRole(row: UserRoleRow | any): UserRole {
     return {
       userId: row.user_id,
       roleId: row.role_id,
-      assignedAt: new Date(row.assigned_at),
+      assignedAt: row.assigned_at ? new Date(row.assigned_at) : new Date(),
       assignedBy: row.assigned_by || undefined
     };
   }
@@ -189,14 +194,20 @@ export class SupabaseRoleRepository implements RoleRepository {
 
   async assignToUser(userId: string, roleId: number, assignedBy?: string): Promise<UserRole> {
     try {
+      const insertData: any = {
+        user_id: userId,
+        role_id: roleId,
+        start_date: new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
+      };
+
+      // Only include assigned_by if it's a valid UUID, otherwise leave it null
+      if (assignedBy && this.isValidUUID(assignedBy)) {
+        insertData.assigned_by = assignedBy;
+      }
+
       const { data: result, error } = await supabase
         .from('user_roles')
-        .insert({
-          user_id: userId,
-          role_id: roleId,
-          assigned_by: assignedBy || null,
-          assigned_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -208,6 +219,11 @@ export class SupabaseRoleRepository implements RoleRepository {
     } catch (error) {
       throw new Error(`Failed to assign role to user: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  private isValidUUID(uuid: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   }
 
   async removeFromUser(userId: string, roleId: number): Promise<boolean> {

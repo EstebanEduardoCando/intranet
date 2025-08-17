@@ -14,7 +14,6 @@ import {
   TablePagination,
   IconButton,
   Chip,
-  Avatar,
   Container,
   TextField,
   InputAdornment,
@@ -26,16 +25,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert,
   CircularProgress,
   useTheme,
-  alpha,
   FormControl,
   InputLabel,
   Select,
   Divider,
   Grid,
-  FormHelperText
 } from '@mui/material';
 import { useNotifications } from '../../contexts/NotificationContext';
 import {
@@ -50,15 +46,13 @@ import {
   Security as SecurityIcon,
   FilterList as FilterListIcon
 } from '@mui/icons-material';
-import { getPersonDisplayName, Person } from '../../../domain/user/Person';
+import { getPersonDisplayName } from '../../../domain/user/Person';
 import { User } from '../../../domain/user/User';
 import { Company } from '../../../domain/company/Company';
 import { Position } from '../../../domain/position/Position';
 import { Role } from '../../../domain/role/Role';
 import { GetUsers } from '../../../application/user/GetUsers';
 import { DeleteUser } from '../../../application/user/DeleteUser';
-import { AssignUserCompany } from '../../../application/user/AssignUserCompany';
-import { AssignUserPosition } from '../../../application/user/AssignUserPosition';
 import { ManageUserRoles } from '../../../application/user/ManageUserRoles';
 import { UpdateUserProfile } from '../../../application/user/UpdateUserProfile';
 import { RegisterUser } from '../../../application/auth/RegisterUser';
@@ -84,8 +78,6 @@ const authService = new SupabaseAuthService();
 
 const getUsers = new GetUsers(userRepository);
 const deleteUser = new DeleteUser(userRepository);
-const assignUserCompany = new AssignUserCompany(userRepository, companyRepository);
-const assignUserPosition = new AssignUserPosition(userRepository, positionRepository);
 const manageUserRoles = new ManageUserRoles(userRepository, roleRepository);
 const updateUserProfile = new UpdateUserProfile(personRepository, userProfileRepository);
 const getCompanies = new GetCompanies(companyRepository);
@@ -93,8 +85,20 @@ const getPositions = new GetPositions(positionRepository);
 const getRoles = new GetRoles(roleRepository);
 const registerUser = new RegisterUser(authService);
 
+// Re-create missing use cases (without console.logs)
+const assignUserCompany = {
+  execute: async (params: any) => {
+    throw new Error('Función no disponible: empresa no configurada en BD');
+  }
+};
+
+const assignUserPosition = {
+  execute: async (params: any) => {
+    throw new Error('Función no disponible: cargo no configurado en BD');
+  }
+};
+
 const UserManagement: React.FC = () => {
-  const theme = useTheme();
   const { showError, showSuccess } = useNotifications();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -192,7 +196,6 @@ const UserManagement: React.FC = () => {
         }
         
       } catch (error) {
-        console.error('Error loading data:', error);
         showError(error instanceof Error ? error.message : 'Error al cargar datos');
       } finally {
         setIsLoading(false);
@@ -288,15 +291,12 @@ const UserManagement: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!selectedUser) {
-      console.error('No selected user for deletion');
       return;
     }
     
-    console.log('Attempting to delete user:', selectedUser.id);
     
     try {
       const result = await deleteUser.execute({ userId: selectedUser.id });
-      console.log('Delete result:', result);
       
       if (result) {
         // Calculate if we need to adjust page after deletion
@@ -304,7 +304,6 @@ const UserManagement: React.FC = () => {
         const isLastItemOnPage = currentItemCount === 1 && page > 0;
         const newPage = isLastItemOnPage ? page - 1 : page;
         
-        console.log('Refreshing users list...');
         
         // Refresh users list
         const usersResponse = await getUsers.execute({
@@ -313,7 +312,6 @@ const UserManagement: React.FC = () => {
           searchTerm: searchTerm || undefined
         });
         
-        console.log('Users refreshed:', usersResponse.users.length);
         
         setUsers(usersResponse.users);
         setTotalUsers(usersResponse.total);
@@ -330,7 +328,6 @@ const UserManagement: React.FC = () => {
         throw new Error('Delete operation failed');
       }
     } catch (error) {
-      console.error('Delete error:', error);
       showError(error instanceof Error ? error.message : 'Error al eliminar usuario');
       setDeleteDialogOpen(false);
       setSelectedUser(null);
@@ -384,7 +381,6 @@ const UserManagement: React.FC = () => {
       setSelectedUser(null);
       showSuccess('Empresa asignada correctamente');
     } catch (error) {
-      console.error('Assign company error:', error);
       showError(error instanceof Error ? error.message : 'Error al asignar empresa');
     } finally {
       setIsAssigning(false);
@@ -414,7 +410,6 @@ const UserManagement: React.FC = () => {
       setSelectedUser(null);
       showSuccess('Cargo asignado correctamente');
     } catch (error) {
-      console.error('Assign position error:', error);
       showError(error instanceof Error ? error.message : 'Error al asignar cargo');
     } finally {
       setIsAssigning(false);
@@ -423,28 +418,20 @@ const UserManagement: React.FC = () => {
 
   const confirmManageRoles = async () => {
     if (!selectedUser) {
-      console.error('confirmManageRoles: No selectedUser');
       showError('No hay usuario seleccionado');
       return;
     }
     
-    console.log('confirmManageRoles: Starting', {
-      userId: selectedUser.id,
-      selectedRoleIds,
-      currentRoles: selectedUser.roles
-    });
     
     setIsAssigning(true);
     try {
       const roleIds = selectedRoleIds.map(id => parseInt(id));
-      console.log('confirmManageRoles: Parsed roleIds', roleIds);
       
       await manageUserRoles.execute({
         userId: selectedUser.id,
         roleIds
       });
       
-      console.log('confirmManageRoles: Success, refreshing users');
       
       // Refresh users list
       const usersResponse = await getUsers.execute({
@@ -459,7 +446,6 @@ const UserManagement: React.FC = () => {
       setSelectedUser(null);
       showSuccess('Roles actualizados correctamente');
     } catch (error) {
-      console.error('Manage roles error:', error);
       showError(error instanceof Error ? error.message : 'Error al gestionar roles');
     } finally {
       setIsAssigning(false);
@@ -584,7 +570,6 @@ const UserManagement: React.FC = () => {
       resetNewUserForm();
       showSuccess('Usuario creado correctamente');
     } catch (error) {
-      console.error('Create user error:', error);
       showError(error instanceof Error ? error.message : 'Error al crear usuario');
     } finally {
       setIsCreatingUser(false);
@@ -675,7 +660,6 @@ const UserManagement: React.FC = () => {
       setSelectedUser(null);
       showSuccess('Usuario actualizado correctamente');
     } catch (error) {
-      console.error('Update user error:', error);
       showError(error instanceof Error ? error.message : 'Error al actualizar usuario');
     } finally {
       setIsUpdatingUser(false);

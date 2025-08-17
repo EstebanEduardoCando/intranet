@@ -27,7 +27,7 @@ export interface UserProfile {
   lastLoginAt?: Date;
   
   /** User preferences and settings */
-  preferences: Record<string, any>;
+  preferences: Record<string, unknown>;
   
   /** Company ID (optional) */
   companyId?: number;
@@ -105,7 +105,7 @@ export interface UpdateUserData {
   }>;
   profile?: Partial<{
     username: string;
-    preferences: Record<string, any>;
+    preferences: Record<string, unknown>;
     companyId: number;
     positionId: number;
   }>;

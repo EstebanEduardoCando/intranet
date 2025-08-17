@@ -9,7 +9,6 @@ import {
 import { supabase } from './supabaseClient';
 import { SupabasePersonRepository } from './SupabasePersonRepository';
 import { SupabaseUserProfileRepository } from './SupabaseUserProfileRepository';
-import { getPersonDisplayName } from '../../domain/user/Person';
 
 /**
  * Supabase implementation of AuthService
@@ -76,7 +75,6 @@ export class SupabaseAuthService implements AuthService {
   }
   
   async register(userData: CreateUserData): Promise<AuthResult> {
-    console.log('Attempting to register user:', { email: userData.email });
     
     try {
       // Start a transaction-like approach (Supabase doesn't have real transactions for auth + custom tables)
@@ -94,10 +92,8 @@ export class SupabaseAuthService implements AuthService {
         }
       });
       
-      console.log('Supabase auth registration response:', { authData, authError });
       
       if (authError) {
-        console.error('Auth registration error:', authError);
         if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
           throw new EmailAlreadyInUseError(authError.message, authError);
         }
@@ -110,7 +106,6 @@ export class SupabaseAuthService implements AuthService {
       
       // Handle case where email confirmation is required
       if (!authData.session) {
-        console.log('User created but session not available - email confirmation may be required');
         throw new RegistrationError(
           'Cuenta creada exitosamente. Por favor verifica tu email antes de iniciar sesión.'
         );
@@ -158,7 +153,6 @@ export class SupabaseAuthService implements AuthService {
     } catch (error) {
       // If any step fails after auth user creation, we should ideally clean up
       // but Supabase doesn't provide easy rollback for auth users
-      console.error('Registration process failed:', error);
       throw error;
     }
   }

@@ -1,4 +1,4 @@
-import { UpdateUserData, User } from '../../domain/user/User';
+import { UpdateUserData } from '../../domain/user/User';
 import { SupabasePersonRepository } from '../../infrastructure/supabase/SupabasePersonRepository';
 import { SupabaseUserProfileRepository } from '../../infrastructure/supabase/SupabaseUserProfileRepository';
 
@@ -56,7 +56,6 @@ export class UpdateUserProfile {
       };
 
     } catch (error) {
-      console.error('Error updating user profile:', error);
       throw new Error(
         error instanceof Error 
           ? error.message 

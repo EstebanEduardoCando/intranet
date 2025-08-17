@@ -31,7 +31,6 @@ export class ChangePassword {
       };
 
     } catch (error) {
-      console.error('Error changing password:', error);
       throw new Error(
         error instanceof Error 
           ? error.message 

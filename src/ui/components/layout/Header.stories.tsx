@@ -14,6 +14,7 @@ const meta = {
   tags: ['autodocs'],
   argTypes: {
     onMenuClick: { action: 'menu-clicked' },
+    onSidebarToggle: { action: 'sidebar-toggled' },
     drawerWidth: {
       control: { type: 'number', min: 200, max: 400, step: 20 }
     }
@@ -28,6 +29,8 @@ type Story = StoryObj<typeof meta>;
  */
 export const Default: Story = {
   args: {
+    onMenuClick: () => console.log('Menu clicked'),
+    onSidebarToggle: () => console.log('Sidebar toggled'),
     drawerWidth: 240,
   },
 };
@@ -37,6 +40,8 @@ export const Default: Story = {
  */
 export const NarrowDrawer: Story = {
   args: {
+    onMenuClick: () => console.log('Menu clicked'),
+    onSidebarToggle: () => console.log('Sidebar toggled'),
     drawerWidth: 200,
   },
 };
@@ -46,6 +51,8 @@ export const NarrowDrawer: Story = {
  */
 export const WideDrawer: Story = {
   args: {
+    onMenuClick: () => console.log('Menu clicked'),
+    onSidebarToggle: () => console.log('Sidebar toggled'),
     drawerWidth: 320,
   },
 };

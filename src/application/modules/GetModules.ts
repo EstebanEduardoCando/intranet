@@ -24,7 +24,6 @@ export class GetModules {
       
       return hierarchicalModules;
     } catch (error) {
-      console.error('Error getting modules:', error);
       throw new Error(
         error instanceof Error 
           ? error.message 
@@ -41,7 +40,6 @@ export class GetModules {
     try {
       return await this.moduleRepository.getMainModules();
     } catch (error) {
-      console.error('Error getting main modules:', error);
       throw new Error(
         error instanceof Error 
           ? error.message 
@@ -59,7 +57,6 @@ export class GetModules {
     try {
       return await this.moduleRepository.getModulesByParent(parentId);
     } catch (error) {
-      console.error('Error getting modules by parent:', error);
       throw new Error(
         error instanceof Error 
           ? error.message 

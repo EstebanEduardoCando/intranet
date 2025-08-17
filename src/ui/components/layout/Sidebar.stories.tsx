@@ -45,6 +45,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     mobileOpen: false,
+    onDrawerToggle: () => console.log('Drawer toggled'),
     drawerWidth: 240,
   },
 };
@@ -55,6 +56,7 @@ export const Default: Story = {
 export const MobileOpen: Story = {
   args: {
     mobileOpen: true,
+    onDrawerToggle: () => console.log('Drawer toggled'),
     drawerWidth: 240,
   },
   parameters: {
@@ -70,6 +72,7 @@ export const MobileOpen: Story = {
 export const Narrow: Story = {
   args: {
     mobileOpen: false,
+    onDrawerToggle: () => console.log('Drawer toggled'),
     drawerWidth: 200,
   },
 };
@@ -80,6 +83,7 @@ export const Narrow: Story = {
 export const Wide: Story = {
   args: {
     mobileOpen: false,
+    onDrawerToggle: () => console.log('Drawer toggled'),
     drawerWidth: 320,
   },
 };
