@@ -57,7 +57,7 @@ export class SessionExpiredError extends AuthError {
 /**
  * Error thrown when email is already in use
  */
-export class EmailAlreadyInUseError extends RegistrationError {
+export class EmailAlreadyInUseError extends AuthError {
   readonly code = 'AUTH_EMAIL_ALREADY_IN_USE';
   
   constructor(message: string = 'Email address is already in use', cause?: Error) {

@@ -4,7 +4,7 @@ import { Person } from '../../domain/user/Person';
 import { supabase } from './supabaseClient';
 
 /**
- * Database row structure for combined user data query (REAL STRUCTURE)
+ * Database row structure for combined user data query
  */
 interface UserRow {
   // Auth user data
@@ -12,16 +12,18 @@ interface UserRow {
   email: string;
   email_confirmed_at: string | null;
   
-  // Profile data (REAL STRUCTURE - sin company_id/position_id)
+  // Profile data
   profile_id: number;
   username: string | null;
   is_active: boolean;
   last_login_at: string | null;
   preferences: any;
+  company_id: number | null;
+  position_id: number | null;
   profile_created_at: string;
   profile_updated_at: string;
   
-  // Person data (REAL STRUCTURE)
+  // Person data
   person_id: number;
   first_name: string;
   middle_name: string | null;
@@ -29,11 +31,16 @@ interface UserRow {
   second_last_name: string | null;
   identity_type: string;
   identity_number: string;
-  person_email: string | null;
   phone: string | null;
   birth_date: string | null;
   person_created_at: string;
   person_updated_at: string;
+  
+  // Company data (optional)
+  company_name: string | null;
+  
+  // Position data (optional)
+  position_name: string | null;
 }
 
 /**
@@ -49,7 +56,8 @@ interface RoleRow {
 }
 
 /**
- * Supabase implementation of UserRepository adapted to REAL database structure
+ * Supabase implementation of UserRepository
+ * This is an adapter in the hexagonal architecture
  */
 export class SupabaseUserRepository implements UserRepository {
   
@@ -83,12 +91,26 @@ export class SupabaseUserRepository implements UserRepository {
         isActive: row.is_active,
         lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : undefined,
         preferences: row.preferences || {},
-        // Note: No company_id/position_id in current structure
+        companyId: row.company_id || undefined,
+        positionId: row.position_id || undefined,
         createdAt: new Date(row.profile_created_at),
         updatedAt: new Date(row.profile_updated_at)
       },
       person,
-      // Note: No company/position in current structure
+      company: row.company_name ? {
+        companyId: row.company_id!,
+        name: row.company_name,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } : undefined,
+      position: row.position_name ? {
+        positionId: row.position_id!,
+        name: row.position_name,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } : undefined,
       roles: roles.map(role => ({
         roleId: role.role_id,
         name: role.name,
@@ -99,10 +121,10 @@ export class SupabaseUserRepository implements UserRepository {
       }))
     };
   }
-
+  
   async findById(id: string): Promise<User | null> {
     try {
-      // Get user with profile and person data
+      // Get user with profile, person, company and position data
       const { data: userData, error: userError } = await supabase
         .from('user_profiles')
         .select(`
@@ -113,8 +135,10 @@ export class SupabaseUserRepository implements UserRepository {
           is_active,
           last_login_at,
           preferences,
-          created_at,
-          updated_at,
+          company_id,
+          position_id,
+          created_at:profile_created_at,
+          updated_at:profile_updated_at,
           persons!inner (
             person_id,
             first_name,
@@ -123,11 +147,18 @@ export class SupabaseUserRepository implements UserRepository {
             second_last_name,
             identity_type,
             identity_number,
-            email,
             phone,
             birth_date,
-            created_at,
-            updated_at
+            created_at:person_created_at,
+            updated_at:person_updated_at
+          ),
+          companies (
+            company_id,
+            name
+          ),
+          positions (
+            position_id,
+            name
           )
         `)
         .eq('user_id', id)
@@ -140,8 +171,12 @@ export class SupabaseUserRepository implements UserRepository {
         throw new Error(`Failed to find user profile: ${userError.message}`);
       }
 
-      // Use the email from persons table since admin access is not available with anon key
-      const userEmail = (userData.persons as any).email || `user${userData.user_id.substring(0, 8)}@example.com`;
+      // Get auth user data
+      const { data: authData, error: authError } = await supabase.auth.admin.getUserById(id);
+      
+      if (authError) {
+        throw new Error(`Failed to find auth user: ${authError.message}`);
+      }
 
       // Get user roles
       const { data: rolesData, error: rolesError } = await supabase
@@ -165,13 +200,15 @@ export class SupabaseUserRepository implements UserRepository {
       // Map the data
       const mappedRow: UserRow = {
         id: userData.user_id,
-        email: userEmail,
-        email_confirmed_at: null, // Not available without admin access
+        email: authData.user.email!,
+        email_confirmed_at: authData.user.email_confirmed_at || null,
         profile_id: userData.profile_id,
         username: userData.username,
         is_active: userData.is_active,
         last_login_at: userData.last_login_at,
         preferences: userData.preferences,
+        company_id: userData.company_id,
+        position_id: userData.position_id,
         profile_created_at: userData.created_at,
         profile_updated_at: userData.updated_at,
         person_id: (userData.persons as any).person_id,
@@ -181,11 +218,12 @@ export class SupabaseUserRepository implements UserRepository {
         second_last_name: (userData.persons as any).second_last_name,
         identity_type: (userData.persons as any).identity_type,
         identity_number: (userData.persons as any).identity_number,
-        person_email: (userData.persons as any).email,
         phone: (userData.persons as any).phone,
         birth_date: (userData.persons as any).birth_date,
         person_created_at: (userData.persons as any).created_at,
-        person_updated_at: (userData.persons as any).updated_at
+        person_updated_at: (userData.persons as any).updated_at,
+        company_name: (userData.companies as any)?.name || null,
+        position_name: (userData.positions as any)?.name || null
       };
 
       const roles = rolesData?.map(r => r.roles as unknown as RoleRow).filter(Boolean) || [];
@@ -195,40 +233,32 @@ export class SupabaseUserRepository implements UserRepository {
       throw new Error(`Failed to find user by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-
+  
   async findByEmail(email: string): Promise<User | null> {
     try {
-      // Search by email in persons table since admin access is not available
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select(`
-          user_id,
-          persons!inner (
-            email
-          )
-        `)
-        .eq('persons.email', email)
-        .eq('is_active', true)
-        .single();
+      // First find auth user by email
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error(`Failed to search auth users: ${authError.message}`);
+      }
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null;
-        }
-        throw new Error(`Failed to search user by email: ${error.message}`);
+      const authUser = authData.users.find(u => u.email === email);
+      if (!authUser) {
+        return null;
       }
 
       // Then find by ID
-      return await this.findById(data.user_id);
+      return await this.findById(authUser.id);
     } catch (error) {
       throw new Error(`Failed to find user by email: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-
+  
   async save(user: User): Promise<User> {
     throw new Error('Save operation not supported. Use specific create/update operations.');
   }
-
+  
   async update(id: string, data: Partial<Omit<User, 'id' | 'createdAt'>>): Promise<User | null> {
     try {
       // Update user profile if profile data is provided
@@ -239,6 +269,8 @@ export class SupabaseUserRepository implements UserRepository {
 
         if (data.profile.username !== undefined) profileUpdate.username = data.profile.username;
         if (data.profile.preferences !== undefined) profileUpdate.preferences = data.profile.preferences;
+        if (data.profile.companyId !== undefined) profileUpdate.company_id = data.profile.companyId;
+        if (data.profile.positionId !== undefined) profileUpdate.position_id = data.profile.positionId;
 
         const { error: profileError } = await supabase
           .from('user_profiles')
@@ -290,10 +322,11 @@ export class SupabaseUserRepository implements UserRepository {
       throw new Error(`Failed to update user: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-
+  
   async delete(id: string): Promise<boolean> {
     try {
-      // Soft delete by deactivating the user profile
+      // Note: In production, consider soft delete instead of hard delete
+      // For now, we'll deactivate the user profile
       const { error } = await supabase
         .from('user_profiles')
         .update({ 
@@ -326,8 +359,10 @@ export class SupabaseUserRepository implements UserRepository {
           is_active,
           last_login_at,
           preferences,
-          created_at,
-          updated_at,
+          company_id,
+          position_id,
+          created_at:profile_created_at,
+          updated_at:profile_updated_at,
           persons!inner (
             person_id,
             first_name,
@@ -336,11 +371,18 @@ export class SupabaseUserRepository implements UserRepository {
             second_last_name,
             identity_type,
             identity_number,
-            email,
             phone,
             birth_date,
-            created_at,
-            updated_at
+            created_at:person_created_at,
+            updated_at:person_updated_at
+          ),
+          companies (
+            company_id,
+            name
+          ),
+          positions (
+            position_id,
+            name
           )
         `)
         .eq('is_active', true)
@@ -351,11 +393,18 @@ export class SupabaseUserRepository implements UserRepository {
         throw new Error(`Failed to find users: ${error.message}`);
       }
 
+      // Get auth users for email data
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error(`Failed to get auth users: ${authError.message}`);
+      }
+
       const users: User[] = [];
       
       for (const profile of data) {
-        // Use email from persons table since admin access is not available
-        const userEmail = (profile.persons as any).email || `user${profile.user_id.substring(0, 8)}@example.com`;
+        const authUser = authData.users.find(u => u.id === profile.user_id);
+        if (!authUser) continue;
 
         // Get roles for this user
         const { data: rolesData } = await supabase
@@ -374,13 +423,15 @@ export class SupabaseUserRepository implements UserRepository {
 
         const mappedRow: UserRow = {
           id: profile.user_id,
-          email: userEmail,
-          email_confirmed_at: null, // Not available without admin access
+          email: authUser.email!,
+          email_confirmed_at: authUser.email_confirmed_at || null,
           profile_id: profile.profile_id,
           username: profile.username,
           is_active: profile.is_active,
           last_login_at: profile.last_login_at,
           preferences: profile.preferences,
+          company_id: profile.company_id,
+          position_id: profile.position_id,
           profile_created_at: profile.created_at,
           profile_updated_at: profile.updated_at,
           person_id: (profile.persons as any).person_id,
@@ -390,11 +441,12 @@ export class SupabaseUserRepository implements UserRepository {
           second_last_name: (profile.persons as any).second_last_name,
           identity_type: (profile.persons as any).identity_type,
           identity_number: (profile.persons as any).identity_number,
-          person_email: (profile.persons as any).email,
           phone: (profile.persons as any).phone,
           birth_date: (profile.persons as any).birth_date,
           person_created_at: (profile.persons as any).created_at,
-          person_updated_at: (profile.persons as any).updated_at
+          person_updated_at: (profile.persons as any).updated_at,
+          company_name: (profile.companies as any)?.name || null,
+          position_name: (profile.positions as any)?.name || null
         };
 
         const roles = rolesData?.map(r => r.roles as unknown as RoleRow).filter(Boolean) || [];
@@ -422,8 +474,10 @@ export class SupabaseUserRepository implements UserRepository {
           is_active,
           last_login_at,
           preferences,
-          created_at,
-          updated_at,
+          company_id,
+          position_id,
+          created_at:profile_created_at,
+          updated_at:profile_updated_at,
           persons!inner (
             person_id,
             first_name,
@@ -432,11 +486,18 @@ export class SupabaseUserRepository implements UserRepository {
             second_last_name,
             identity_type,
             identity_number,
-            email,
             phone,
             birth_date,
-            created_at,
-            updated_at
+            created_at:person_created_at,
+            updated_at:person_updated_at
+          ),
+          companies (
+            company_id,
+            name
+          ),
+          positions (
+            position_id,
+            name
           )
         `)
         .eq('is_active', true)
@@ -448,22 +509,23 @@ export class SupabaseUserRepository implements UserRepository {
         throw new Error(`Failed to search users: ${error.message}`);
       }
 
+      // Get auth users for email data  
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error(`Failed to get auth users: ${authError.message}`);
+      }
+
       const users: User[] = [];
       
       for (const profile of data) {
-        // Use email from persons table since admin access is not available
-        const userEmail = (profile.persons as any).email || `user${profile.user_id.substring(0, 8)}@example.com`;
+        const authUser = authData.users.find(u => u.id === profile.user_id);
+        if (!authUser) continue;
 
         // Also search by email
-        if (searchTerm && !userEmail.toLowerCase().includes(searchTerm.toLowerCase())) {
-          // Skip if email doesn't match search term
-          const personMatches = 
-            (profile.persons as any).first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (profile.persons as any).last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (profile.persons as any).identity_number?.includes(searchTerm) ||
-            profile.username?.toLowerCase().includes(searchTerm.toLowerCase());
-          
-          if (!personMatches) continue;
+        if (!authUser.email?.toLowerCase().includes(searchTerm.toLowerCase())) {
+          // Skip if email doesn't match and we're doing email search
+          continue;
         }
 
         // Get roles for this user
@@ -483,13 +545,15 @@ export class SupabaseUserRepository implements UserRepository {
 
         const mappedRow: UserRow = {
           id: profile.user_id,
-          email: userEmail,
-          email_confirmed_at: null, // Not available without admin access
+          email: authUser.email!,
+          email_confirmed_at: authUser.email_confirmed_at || null,
           profile_id: profile.profile_id,
           username: profile.username,
           is_active: profile.is_active,
           last_login_at: profile.last_login_at,
           preferences: profile.preferences,
+          company_id: profile.company_id,
+          position_id: profile.position_id,
           profile_created_at: profile.created_at,
           profile_updated_at: profile.updated_at,
           person_id: (profile.persons as any).person_id,
@@ -499,11 +563,12 @@ export class SupabaseUserRepository implements UserRepository {
           second_last_name: (profile.persons as any).second_last_name,
           identity_type: (profile.persons as any).identity_type,
           identity_number: (profile.persons as any).identity_number,
-          person_email: (profile.persons as any).email,
           phone: (profile.persons as any).phone,
           birth_date: (profile.persons as any).birth_date,
           person_created_at: (profile.persons as any).created_at,
-          person_updated_at: (profile.persons as any).updated_at
+          person_updated_at: (profile.persons as any).updated_at,
+          company_name: (profile.companies as any)?.name || null,
+          position_name: (profile.positions as any)?.name || null
         };
 
         const roles = rolesData?.map(r => r.roles as unknown as RoleRow).filter(Boolean) || [];

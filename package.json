@@ -16,7 +16,8 @@
     "docs:openapi": "npx redoc-cli serve docs/openapi.yaml --port 8082",
     "docs:dev": "cd docs && npm start",
     "docs:build": "cd docs && npm run build",
-    "docs:all": "concurrently \"npm run storybook\" \"npm run docs:dev\" \"npm run docs:api && npm run docs:serve\" \"npm run docs:openapi\""
+    "docs:all": "concurrently \"npm run storybook\" \"npm run docs:dev\" \"npm run docs:api && npm run docs:serve\" \"npm run docs:openapi\"",
+    "db:verify": "npx ts-node scripts/setupDatabase.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.11.3",
@@ -24,6 +25,7 @@
     "@mui/icons-material": "^5.15.20",
     "@mui/material": "^5.15.20",
     "@supabase/supabase-js": "^2.55.0",
+    "dotenv": "^17.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.1",

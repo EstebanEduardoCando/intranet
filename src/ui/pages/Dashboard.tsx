@@ -151,7 +151,7 @@ const Dashboard: React.FC = () => {
             <WavingHandIcon sx={{ fontSize: 32, color: 'primary.main' }} />
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5 }}>
-                {greeting}, {user?.name || 'Usuario'}!
+                {greeting}, {user?.person.firstName || 'Usuario'}!
               </Typography>
               <Typography variant="body1" sx={{ color: 'text.secondary' }}>
                 Bienvenido de nuevo a tu panel de control
@@ -169,7 +169,7 @@ const Dashboard: React.FC = () => {
                   fontSize: '0.75rem'
                 }}
               >
-                {user?.name?.charAt(0) || 'U'}
+                {user?.person.firstName?.charAt(0) || 'U'}
               </Avatar>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {user?.email || 'correo@ejemplo.com'}

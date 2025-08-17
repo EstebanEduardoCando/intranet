@@ -44,107 +44,99 @@ import {
   FilterList as FilterListIcon
 } from '@mui/icons-material';
 import { getPersonDisplayName, Person } from '../../../domain/user/Person';
+import { User } from '../../../domain/user/User';
+import { Company } from '../../../domain/company/Company';
+import { Position } from '../../../domain/position/Position';
+import { Role } from '../../../domain/role/Role';
+import { GetUsers } from '../../../application/user/GetUsers';
+import { DeleteUser } from '../../../application/user/DeleteUser';
+import { AssignUserCompany } from '../../../application/user/AssignUserCompany';
+import { AssignUserPosition } from '../../../application/user/AssignUserPosition';
+import { ManageUserRoles } from '../../../application/user/ManageUserRoles';
+import { GetCompanies } from '../../../application/company/GetCompanies';
+import { GetPositions } from '../../../application/position/GetPositions';
+import { GetRoles } from '../../../application/role/GetRoles';
+import { SupabaseUserRepository } from '../../../infrastructure/supabase/SupabaseUserRepository';
+import { SupabaseCompanyRepository } from '../../../infrastructure/supabase/SupabaseCompanyRepository';
+import { SupabasePositionRepository } from '../../../infrastructure/supabase/SupabasePositionRepository';
+import { SupabaseRoleRepository } from '../../../infrastructure/supabase/SupabaseRoleRepository';
+import { DatabaseStatus } from '../../components/common/DatabaseStatus';
 
-// Mock data structure for demonstration
-interface UserData {
-  id: string;
-  person: Person;
-  profile: {
-    username?: string;
-  };
-  email: string;
-  isActive: boolean;
-  company?: {
-    name: string;
-  };
-  position?: {
-    name: string;
-  };
-  roles: {
-    name: string;
-  }[];
-  createdAt: Date;
-}
+// Initialize repositories and use cases
+const userRepository = new SupabaseUserRepository();
+const companyRepository = new SupabaseCompanyRepository();
+const positionRepository = new SupabasePositionRepository();
+const roleRepository = new SupabaseRoleRepository();
+
+const getUsers = new GetUsers(userRepository);
+const deleteUser = new DeleteUser(userRepository);
+const assignUserCompany = new AssignUserCompany(userRepository, companyRepository);
+const assignUserPosition = new AssignUserPosition(userRepository, positionRepository);
+const manageUserRoles = new ManageUserRoles(userRepository, roleRepository);
+const getCompanies = new GetCompanies(companyRepository);
+const getPositions = new GetPositions(positionRepository);
+const getRoles = new GetRoles(roleRepository);
 
 const UserManagement: React.FC = () => {
   const theme = useTheme();
-  const [users, setUsers] = useState<UserData[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [error, setError] = useState('');
+  const [isDatabaseReady, setIsDatabaseReady] = useState(false);
 
-  // Mock data for demonstration
+  // Load users and related data
   useEffect(() => {
-    const loadUsers = async () => {
+    const loadData = async () => {
+      if (!isDatabaseReady) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
-        // TODO: Implement real user fetching from repository - UserManagement.tsx:67 - Prioridad: Alta
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setError('');
         
-        // Mock data
-        const mockUsers: UserData[] = [
-          {
-            id: '1',
-            person: {
-              personId: 1,
-              firstName: 'Juan',
-              lastName: 'Pérez',
-              identityType: 'DNI',
-              identityNumber: '12345678',
-              phone: '+51987654321',
-              createdAt: new Date('2024-01-15'),
-              updatedAt: new Date('2024-01-15')
-            },
-            profile: {
-              username: 'jperez'
-            },
-            email: 'juan.perez@empresa.com',
-            isActive: true,
-            company: { name: 'Matriz' },
-            position: { name: 'Desarrollador Senior' },
-            roles: [{ name: 'Administrador' }, { name: 'Usuario' }],
-            createdAt: new Date('2024-01-15')
-          },
-          {
-            id: '2',
-            person: {
-              personId: 2,
-              firstName: 'María',
-              lastName: 'García',
-              identityType: 'DNI',
-              identityNumber: '87654321',
-              createdAt: new Date('2024-02-20'),
-              updatedAt: new Date('2024-02-20')
-            },
-            profile: {
-              username: 'mgarcia'
-            },
-            email: 'maria.garcia@empresa.com',
-            isActive: true,
-            company: { name: 'Sucursal Norte' },
-            position: { name: 'Analista de Sistemas' },
-            roles: [{ name: 'Usuario' }],
-            createdAt: new Date('2024-02-20')
-          }
-        ];
+        // Load users with search and pagination
+        const usersResponse = await getUsers.execute({
+          page,
+          limit: rowsPerPage,
+          searchTerm: searchTerm || undefined
+        });
         
-        setUsers(mockUsers);
+        setUsers(usersResponse.users);
+        setTotalUsers(usersResponse.total);
+        
+        // Load companies, positions, and roles for dropdowns
+        const [companiesData, positionsData, rolesData] = await Promise.all([
+          getCompanies.execute(),
+          getPositions.execute(),
+          getRoles.execute()
+        ]);
+        
+        setCompanies(companiesData);
+        setPositions(positionsData);
+        setRoles(rolesData);
+        
       } catch (error) {
-        console.error('Error loading users:', error);
-        setError('Error al cargar usuarios');
+        console.error('Error loading data:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar datos');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadUsers();
-  }, []);
+    loadData();
+  }, [page, rowsPerPage, searchTerm, isDatabaseReady]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -160,7 +152,7 @@ const UserManagement: React.FC = () => {
     setPage(0);
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: UserData) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: User) => {
     setAnchorEl(event.currentTarget);
     setSelectedUser(user);
   };
@@ -171,7 +163,6 @@ const UserManagement: React.FC = () => {
   };
 
   const handleEdit = () => {
-    // TODO: Implement user edit functionality - UserManagement.tsx:134 - Prioridad: Media
     console.log('Edit user:', selectedUser);
     handleMenuClose();
   };
@@ -182,51 +173,57 @@ const UserManagement: React.FC = () => {
   };
 
   const confirmDelete = async () => {
+    if (!selectedUser) return;
+    
     try {
-      // TODO: Implement user deletion - UserManagement.tsx:145 - Prioridad: Media
-      console.log('Delete user:', selectedUser);
+      await deleteUser.execute({ userId: selectedUser.id });
+      
+      // Refresh users list
+      const usersResponse = await getUsers.execute({
+        page,
+        limit: rowsPerPage,
+        searchTerm: searchTerm || undefined
+      });
+      
+      setUsers(usersResponse.users);
+      setTotalUsers(usersResponse.total);
       setDeleteDialogOpen(false);
       setSelectedUser(null);
     } catch (error) {
-      setError('Error al eliminar usuario');
+      setError(error instanceof Error ? error.message : 'Error al eliminar usuario');
     }
   };
 
-  const handleAssignCompany = () => {
-    // TODO: Implement company assignment - UserManagement.tsx:154 - Prioridad: Media
+  const handleAssignCompany = async () => {
+    if (!selectedUser) return;
+    
     console.log('Assign company to user:', selectedUser);
     handleMenuClose();
   };
 
-  const handleAssignPosition = () => {
-    // TODO: Implement position assignment - UserManagement.tsx:160 - Prioridad: Media
+  const handleAssignPosition = async () => {
+    if (!selectedUser) return;
+    
     console.log('Assign position to user:', selectedUser);
     handleMenuClose();
   };
 
-  const handleManageRoles = () => {
-    // TODO: Implement role management - UserManagement.tsx:166 - Prioridad: Media
+  const handleManageRoles = async () => {
+    if (!selectedUser) return;
+    
     console.log('Manage roles for user:', selectedUser);
     handleMenuClose();
   };
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user =>
-    user.person.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.person.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.person.identityNumber.includes(searchTerm)
-  );
-
-  // Paginate filtered users
-  const paginatedUsers = filteredUsers.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  // Users are already filtered and paginated by the backend
+  const paginatedUsers = users;
 
   return (
     <Container maxWidth={false}>
       <Box sx={{ py: 4 }}>
+        {/* Database Status Check */}
+        <DatabaseStatus onStatusChange={setIsDatabaseReady} />
+        
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
@@ -357,14 +354,14 @@ const UserManagement: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <Chip
-                              label={user.isActive ? 'Activo' : 'Inactivo'}
-                              color={user.isActive ? 'success' : 'default'}
+                              label={user.profile.isActive ? 'Activo' : 'Inactivo'}
+                              color={user.profile.isActive ? 'success' : 'default'}
                               size="small"
                             />
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">
-                              {user.createdAt.toLocaleDateString()}
+                              {user.profile.createdAt.toLocaleDateString()}
                             </Typography>
                           </TableCell>
                           <TableCell align="center">
@@ -384,7 +381,7 @@ const UserManagement: React.FC = () => {
                 <TablePagination
                   rowsPerPageOptions={[5, 10, 25]}
                   component="div"
-                  count={filteredUsers.length}
+                  count={totalUsers}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={handleChangePage}

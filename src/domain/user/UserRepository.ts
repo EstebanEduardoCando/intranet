@@ -40,4 +40,27 @@ export interface UserRepository {
    * @returns Promise resolving to boolean indicating success
    */
   delete(id: string): Promise<boolean>;
+  
+  /**
+   * Find all users with pagination
+   * @param page Page number (0-based)
+   * @param limit Number of users per page
+   * @returns Promise resolving to array of Users
+   */
+  findAll(page?: number, limit?: number): Promise<User[]>;
+  
+  /**
+   * Search users by term
+   * @param searchTerm Search term to look for in name, email, identity
+   * @param page Page number (0-based)
+   * @param limit Number of users per page
+   * @returns Promise resolving to array of Users
+   */
+  search(searchTerm: string, page?: number, limit?: number): Promise<User[]>;
+  
+  /**
+   * Count total users
+   * @returns Promise resolving to total count
+   */
+  count(): Promise<number>;
 }

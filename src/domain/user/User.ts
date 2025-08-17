@@ -1,4 +1,7 @@
 import { Person } from './Person';
+import { Company } from '../company/Company';
+import { Position } from '../position/Position';
+import { Role } from '../role/Role';
 
 /**
  * UserProfile entity representing a user's system profile
@@ -26,6 +29,12 @@ export interface UserProfile {
   /** User preferences and settings */
   preferences: Record<string, any>;
   
+  /** Company ID (optional) */
+  companyId?: number;
+  
+  /** Position ID (optional) */
+  positionId?: number;
+  
   /** Timestamp when the profile was created */
   createdAt: Date;
   
@@ -52,6 +61,15 @@ export interface User {
   
   /** Person information */
   person: Person;
+  
+  /** Company information (optional) */
+  company?: Company;
+  
+  /** Position information (optional) */
+  position?: Position;
+  
+  /** User roles */
+  roles: Role[];
 }
 
 /**
@@ -88,5 +106,7 @@ export interface UpdateUserData {
   profile?: Partial<{
     username: string;
     preferences: Record<string, any>;
+    companyId: number;
+    positionId: number;
   }>;
 }

@@ -140,8 +140,12 @@ export class SupabaseUserRepository implements UserRepository {
         throw new Error(`Failed to find user profile: ${userError.message}`);
       }
 
-      // Use the email from persons table since admin access is not available with anon key
-      const userEmail = (userData.persons as any).email || `user${userData.user_id.substring(0, 8)}@example.com`;
+      // Get auth user data
+      const { data: authData, error: authError } = await supabase.auth.admin.getUserById(id);
+      
+      if (authError) {
+        throw new Error(`Failed to find auth user: ${authError.message}`);
+      }
 
       // Get user roles
       const { data: rolesData, error: rolesError } = await supabase
@@ -165,8 +169,8 @@ export class SupabaseUserRepository implements UserRepository {
       // Map the data
       const mappedRow: UserRow = {
         id: userData.user_id,
-        email: userEmail,
-        email_confirmed_at: null, // Not available without admin access
+        email: authData.user.email!,
+        email_confirmed_at: authData.user.email_confirmed_at || null,
         profile_id: userData.profile_id,
         username: userData.username,
         is_active: userData.is_active,
@@ -198,28 +202,20 @@ export class SupabaseUserRepository implements UserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     try {
-      // Search by email in persons table since admin access is not available
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select(`
-          user_id,
-          persons!inner (
-            email
-          )
-        `)
-        .eq('persons.email', email)
-        .eq('is_active', true)
-        .single();
+      // First find auth user by email
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error(`Failed to search auth users: ${authError.message}`);
+      }
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null;
-        }
-        throw new Error(`Failed to search user by email: ${error.message}`);
+      const authUser = authData.users.find(u => u.email === email);
+      if (!authUser) {
+        return null;
       }
 
       // Then find by ID
-      return await this.findById(data.user_id);
+      return await this.findById(authUser.id);
     } catch (error) {
       throw new Error(`Failed to find user by email: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -351,11 +347,18 @@ export class SupabaseUserRepository implements UserRepository {
         throw new Error(`Failed to find users: ${error.message}`);
       }
 
+      // Get auth users for email data
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error(`Failed to get auth users: ${authError.message}`);
+      }
+
       const users: User[] = [];
       
       for (const profile of data) {
-        // Use email from persons table since admin access is not available
-        const userEmail = (profile.persons as any).email || `user${profile.user_id.substring(0, 8)}@example.com`;
+        const authUser = authData.users.find(u => u.id === profile.user_id);
+        if (!authUser) continue;
 
         // Get roles for this user
         const { data: rolesData } = await supabase
@@ -374,8 +377,8 @@ export class SupabaseUserRepository implements UserRepository {
 
         const mappedRow: UserRow = {
           id: profile.user_id,
-          email: userEmail,
-          email_confirmed_at: null, // Not available without admin access
+          email: authUser.email!,
+          email_confirmed_at: authUser.email_confirmed_at || null,
           profile_id: profile.profile_id,
           username: profile.username,
           is_active: profile.is_active,
@@ -448,14 +451,21 @@ export class SupabaseUserRepository implements UserRepository {
         throw new Error(`Failed to search users: ${error.message}`);
       }
 
+      // Get auth users for email data  
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error(`Failed to get auth users: ${authError.message}`);
+      }
+
       const users: User[] = [];
       
       for (const profile of data) {
-        // Use email from persons table since admin access is not available
-        const userEmail = (profile.persons as any).email || `user${profile.user_id.substring(0, 8)}@example.com`;
+        const authUser = authData.users.find(u => u.id === profile.user_id);
+        if (!authUser) continue;
 
         // Also search by email
-        if (searchTerm && !userEmail.toLowerCase().includes(searchTerm.toLowerCase())) {
+        if (searchTerm && !authUser.email?.toLowerCase().includes(searchTerm.toLowerCase())) {
           // Skip if email doesn't match search term
           const personMatches = 
             (profile.persons as any).first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -483,8 +493,8 @@ export class SupabaseUserRepository implements UserRepository {
 
         const mappedRow: UserRow = {
           id: profile.user_id,
-          email: userEmail,
-          email_confirmed_at: null, // Not available without admin access
+          email: authUser.email!,
+          email_confirmed_at: authUser.email_confirmed_at || null,
           profile_id: profile.profile_id,
           username: profile.username,
           is_active: profile.is_active,

@@ -43,7 +43,8 @@ export class SupabaseAuthService implements AuthService {
       email: authUser.email,
       emailVerified: authUser.email_confirmed_at !== null,
       profile: userProfile,
-      person: person
+      person: person,
+      roles: []
     };
   }
   
@@ -143,7 +144,8 @@ export class SupabaseAuthService implements AuthService {
         email: authData.user.email!,
         emailVerified: authData.user.email_confirmed_at !== null,
         profile: userProfile,
-        person: person
+        person: person,
+        roles: []
       };
       
       return {

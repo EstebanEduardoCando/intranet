@@ -19,7 +19,11 @@
       "Bash(git check-ignore:*)",
       "Bash(git push:*)",
       "WebFetch(domain:templates.iqonic.design)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": [],
