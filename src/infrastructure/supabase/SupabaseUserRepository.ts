@@ -54,9 +54,49 @@ interface RoleRow {
 export class SupabaseUserRepository implements UserRepository {
   
   /**
+   * Get company and position assignment for a person
+   */
+  private async getAssignmentInfo(personId: number): Promise<{ company?: any, position?: any }> {
+    try {
+      const { data: assignment } = await supabase
+        .from('position_assignments')
+        .select(`
+          companies!inner (
+            company_id,
+            legal_name,
+            trade_name,
+            is_active
+          ),
+          positions!inner (
+            position_id,
+            name,
+            description,
+            level,
+            is_active
+          )
+        `)
+        .eq('person_id', personId)
+        .eq('status', 'ACTIVE')
+        .single();
+
+      if (assignment) {
+        return {
+          company: assignment.companies,
+          position: assignment.positions
+        };
+      }
+      
+      return {};
+    } catch (error) {
+      // No assignment found or error - return empty
+      return {};
+    }
+  }
+  
+  /**
    * Convert database row to domain User entity
    */
-  private mapRowToUser(row: UserRow, roles: RoleRow[] = []): User {
+  private async mapRowToUser(row: UserRow, roles: RoleRow[] = []): Promise<User> {
     const person: Person = {
       personId: row.person_id,
       firstName: row.first_name,
@@ -70,6 +110,9 @@ export class SupabaseUserRepository implements UserRepository {
       createdAt: new Date(row.person_created_at),
       updatedAt: new Date(row.person_updated_at)
     };
+
+    // Get company and position assignments
+    const { company: companyData, position: positionData } = await this.getAssignmentInfo(row.person_id);
 
     return {
       id: row.id,
@@ -87,7 +130,22 @@ export class SupabaseUserRepository implements UserRepository {
         updatedAt: new Date(row.profile_updated_at)
       },
       person,
-      // Note: No company/position in current structure
+      company: companyData ? {
+        companyId: companyData.company_id,
+        name: companyData.trade_name || companyData.legal_name,
+        isActive: companyData.is_active,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } : undefined,
+      position: positionData ? {
+        positionId: positionData.position_id,
+        name: positionData.name,
+        description: positionData.description,
+        department: positionData.level, // Mapping level to department
+        isActive: positionData.is_active,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } : undefined,
       roles: roles.map(role => ({
         roleId: role.role_id,
         name: role.name,
@@ -189,7 +247,7 @@ export class SupabaseUserRepository implements UserRepository {
 
       const roles = rolesData?.map(r => r.roles as unknown as RoleRow).filter(Boolean) || [];
       
-      return this.mapRowToUser(mappedRow, roles);
+      return await this.mapRowToUser(mappedRow, roles);
     } catch (error) {
       throw new Error(`Failed to find user by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -398,7 +456,7 @@ export class SupabaseUserRepository implements UserRepository {
         };
 
         const roles = rolesData?.map(r => r.roles as unknown as RoleRow).filter(Boolean) || [];
-        users.push(this.mapRowToUser(mappedRow, roles));
+        users.push(await this.mapRowToUser(mappedRow, roles));
       }
 
       return users;
@@ -509,7 +567,7 @@ export class SupabaseUserRepository implements UserRepository {
         };
 
         const roles = rolesData?.map(r => r.roles as unknown as RoleRow).filter(Boolean) || [];
-        users.push(this.mapRowToUser(mappedRow, roles));
+        users.push(await this.mapRowToUser(mappedRow, roles));
       }
 
       return users;

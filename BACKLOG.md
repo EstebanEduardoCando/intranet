@@ -8,6 +8,7 @@
 - **Sprint 3**: Sistema completo con módulos dinámicos y UX mejorada ✅
 - **Sprint 4**: User Management CRUD funcional ✅
 - **Sprint 5**: Notificaciones, edición usuarios, gestión roles ✅
+- **Sprint 6**: Gestión empresa+cargo unificada, arquitectura BD corregida ✅
 
 ## 📝 **TODOs Documentados del Código**
 
@@ -32,41 +33,43 @@
 - ✅ Fix PGRST204 error en gestión de roles - Sprint 5+ (NUEVO)
 - ✅ Lint y TypeCheck - 100+ warnings corregidas - Sprint 5+ (NUEVO)
 - ✅ Console.log statements eliminados del código - Sprint 5+ (NUEVO)
+- ✅ Gestión empresa y cargo - Modal unificado implementado - Sprint 6 (NUEVO)
+- ✅ Arquitectura BD corregida - position_assignments implementado - Sprint 6 (NUEVO)
 
 ---
 
 ## 🎯 Próximos Sprints
 
-### **Sprint 6: Performance y Optimización** 🔸
+### **Sprint 7: Performance y Optimización** 🔸
 **Tiempo**: 70 min | **Prioridad**: Media
 
 **Tareas**:
-- [ ] **6.1**: Bundle optimization (25 min) - Code splitting, lazy loading
-- [ ] **6.2**: Error states mejorados (20 min) - Error boundary, retry
-- [ ] **6.3**: Tests automatizados (15 min) - Casos críticos
-- [ ] **6.4**: Verificación contraseña actual (10 min) - ChangePassword.ts:21 (Alta prioridad)
+- [ ] **7.1**: Bundle optimization (25 min) - Code splitting, lazy loading
+- [ ] **7.2**: Error states mejorados (20 min) - Error boundary, retry
+- [ ] **7.3**: Tests automatizados (15 min) - Casos críticos
+- [ ] **7.4**: Verificación contraseña actual (10 min) - ChangePassword.ts:21 (Alta prioridad)
 
 **Criterios**: Bundle <400kB, UX robusta, tests principales
 
 ---
 
-### **Sprint 7: Funcionalidades Avanzadas** 🔸
+### **Sprint 8: Funcionalidades Avanzadas** 🔸
 **Tiempo**: 85 min | **Prioridad**: Media-Baja
 
 **Tareas**:
-- [ ] **7.1**: Upload Avatar (30 min) - Supabase Storage integration
-- [ ] **7.2**: OAuth Google (25 min) - Config + UI
-- [ ] **7.3**: Notificaciones push (20 min) - Sistema básico
-- [ ] **7.4**: Filtrado por usuario módulos (10 min) - GetModules.ts:7 (Media prioridad)
+- [ ] **8.1**: Upload Avatar (30 min) - Supabase Storage integration
+- [ ] **8.2**: OAuth Google (25 min) - Config + UI
+- [ ] **8.3**: Notificaciones push (20 min) - Sistema básico
+- [ ] **8.4**: Filtrado por usuario módulos (10 min) - GetModules.ts:7 (Media prioridad)
 
 ---
 
-### **Sprint 8: Testing y Documentación** 🔹
+### **Sprint 9: Testing y Documentación** 🔹
 **Tiempo**: 50 min | **Prioridad**: Baja
 
 **Tareas**:
-- [ ] **8.1**: Tests automatizados (30 min) - Unit + E2E
-- [ ] **8.2**: Documentación completa (20 min) - README + TypeDoc
+- [ ] **9.1**: Tests automatizados (30 min) - Unit + E2E
+- [ ] **9.2**: Documentación completa (20 min) - README + TypeDoc
 
 ---
 
@@ -89,28 +92,28 @@
 
 | Sprint | Estado | Prioridad | Tiempo | Enfoque |
 |--------|--------|-----------|--------|---------|
-| 1-5 | ✅ | - | 410 min | **COMPLETADOS** |
-| 6 | ⏳ | 🔶 Media | 70 min | Performance + Optimización |
-| 7 | ⏳ | 🔸 Media-Baja | 85 min | Features Avanzadas |
-| 8 | ⏳ | 🔹 Baja | 50 min | Testing + Docs |
+| 1-6 | ✅ | - | 480 min | **COMPLETADOS** |
+| 7 | ⏳ | 🔶 Media | 70 min | Performance + Optimización |
+| 8 | ⏳ | 🔸 Media-Baja | 85 min | Features Avanzadas |
+| 9 | ⏳ | 🔹 Baja | 50 min | Testing + Docs |
 
 **Total Pendiente**: 3h 25min
 
 ## 🎯 Próxima Acción
-**COMENZAR SPRINT 6** - Performance y optimización del bundle.
+**COMENZAR SPRINT 7** - Performance y optimización del bundle.
 
-## 🎉 **Logros Destacados Sprint 5+**
-- ✅ **UserManagement**: 100% funcional y estable, sin errores críticos
-- ✅ **Sistema de Notificaciones**: Completo con auto-close 3s
-- ✅ **Arquitectura**: Adaptada a estructura real de BD
-- ✅ **Error Handling**: Robusto manejo de errores con logging
-- ✅ **Navegación**: Breadcrumbs corregidos para todas las rutas
-- ✅ **Fix PGRST204**: Error de roles completamente resuelto
-- ✅ **Gestión de Roles**: Asignación/remoción funcional sin errores
-- ✅ **Calidad de Código**: ESLint corregido, console.logs eliminados
-- ✅ **Tests Completos**: Scripts de validación y detección de errores
-- ✅ **TODOs**: Documentados y priorizados en backlog
+## 🎉 **Logros Destacados Sprint 6**
+- ✅ **Gestión Empresa+Cargo**: Modal unificado completamente funcional
+- ✅ **Arquitectura BD Corregida**: Implementación real usando position_assignments  
+- ✅ **UX Mejorada**: Un solo diálogo intuitivo reemplaza dos modales separados
+- ✅ **Eliminación Errores**: Sin dependencias circulares "assign company first"
+- ✅ **Persistencia Real**: Los datos se guardan correctamente en la BD
+- ✅ **Validación Robusta**: Ambos campos empresa y cargo son requeridos
+- ✅ **Casos de Uso Unificados**: AssignUserCompanyAndPosition implementado
+- ✅ **Scripts de Datos**: insertSampleData.sql para empresas y posiciones
+- ✅ **UserRepository Actualizado**: Lee empresa+cargo desde position_assignments
+- ✅ **Documentación**: CLAUDE.md y BACKLOG.md actualizados
 
 ---
 
-*Actualizado: 2025-08-17 - Sprint 5+ COMPLETADO Y ESTABILIZADO - Error PGRST204 resuelto, código optimizado, proyecto listo para Sprint 6*
+*Actualizado: 2025-08-18 - Sprint 6 COMPLETADO - Gestión empresa+cargo unificada implementada, arquitectura BD corregida, funcionalidad 100% operativa*

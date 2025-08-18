@@ -32,22 +32,7 @@ type Story = StoryObj<typeof meta>;
  * Complete layout with sample content
  */
 export const Default: Story = {
-  render: () => (
-    <Layout>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
-      <Typography variant="body1" paragraph>
-        This is the main content area. The layout includes:
-      </Typography>
-      <ul>
-        <li>Header with app bar and theme toggle</li>
-        <li>Responsive sidebar with navigation</li>
-        <li>Main content area (this section)</li>
-        <li>Footer at the bottom</li>
-      </ul>
-    </Layout>
-  ),
+  render: () => <Layout />,
 };
 
 /**

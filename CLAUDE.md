@@ -30,6 +30,15 @@ src/
 
 ## 🎯 Estado Actual
 
+### ✅ **Sprint 6 - COMPLETADO (ESTABLE)**
+- **Gestión de Empresa y Cargo**: Modal combinado para asignar empresa + cargo simultáneamente
+- **Arquitectura BD Corregida**: Implementación usando `position_assignments` correctamente
+- **Casos de Uso Unificados**: `AssignUserCompanyAndPosition` reemplaza asignaciones separadas
+- **UX Mejorada**: Un solo diálogo intuitivo en lugar de dos modales separados
+- **Validación Robusta**: Ambos campos empresa y cargo son requeridos
+- **Persistencia Real**: Los datos se guardan correctamente en la estructura de BD
+- **Eliminación de Dependencias Circulares**: Sin errores de "assign company first" o "assign position first"
+
 ### ✅ **Sprint 5 - COMPLETADO (ESTABLE)**
 - **User Management Completo**: CRUD total funcional, búsqueda optimizada, filtros avanzados
 - **Sistema de Notificaciones**: Contexto completo, header integrado, auto-close 3s para todos
@@ -56,7 +65,8 @@ src/
 - **Sistema de Módulos**: Sidebar dinámico desde BD, jerarquías, rutas automáticas
 
 ### 🔄 **Funcionalidades Operativas (100% ESTABLES)**
-- **UserManagement**: ✅ Búsqueda, eliminación, creación, edición, gestión de roles (sin errores)
+- **UserManagement**: ✅ CRUD completo, búsqueda, filtros, gestión de roles, asignación empresa+cargo
+- **Asignación Empresa-Cargo**: ✅ Modal unificado, persistencia real, validación robusta
 - **Notificaciones**: ✅ Sistema completo con auto-close 3s para todos los tipos  
 - **Autenticación**: ✅ Sistema completo con cambio de contraseña
 - **Navegación**: ✅ Breadcrumbs corregidos, sidebar dinámico, rutas protegidas
@@ -64,9 +74,9 @@ src/
 - **Arquitectura**: ✅ Repositorios e inyección de dependencias correctos
 
 ### ⏳ **Próximos Sprints**
-1. **Sprint 6**: Optimización bundle y code splitting
-2. **Sprint 7**: Upload avatar, OAuth, notificaciones push
-3. **Sprint 8**: Funcionalidades empresa/cargo (requiere migración BD)
+1. **Sprint 7**: Optimización bundle y code splitting
+2. **Sprint 8**: Upload avatar, OAuth, notificaciones push
+3. **Sprint 9**: Funcionalidades adicionales empresa/cargo (reportes, dashboard)
 
 Ver `BACKLOG.md` para roadmap detallado.
 
@@ -106,6 +116,10 @@ src/domain/
 ├── user/
 │   ├── User.ts                          # Entidades User, UserProfile, CreateUserData
 │   └── Person.ts                        # Entidad Person + helpers
+├── company/
+│   └── Company.ts                       # Entidad Company + tipos
+├── position/
+│   └── Position.ts                      # Entidad Position + tipos
 └── modules/
     └── Module.ts                        # Entidad Module + jerarquías
 
@@ -113,7 +127,8 @@ src/application/
 ├── auth/                                # Casos de uso autenticación
 ├── user/
 │   ├── UpdateUserProfile.ts            # Caso de uso actualización perfil
-│   └── ChangePassword.ts               # Caso de uso cambio contraseña
+│   ├── ChangePassword.ts               # Caso de uso cambio contraseña
+│   └── AssignUserCompanyAndPosition.ts # Caso de uso asignación empresa+cargo
 └── modules/
     └── GetModules.ts                    # Caso de uso obtener módulos
 
@@ -121,6 +136,9 @@ src/infrastructure/supabase/
 ├── SupabaseAuthService.ts               # Servicio auth integrado
 ├── SupabasePersonRepository.ts         # Repositorio personas
 ├── SupabaseUserProfileRepository.ts    # Repositorio perfiles
+├── SupabaseUserRepository.ts           # Repositorio usuarios con empresa+cargo
+├── SupabaseCompanyRepository.ts        # Repositorio empresas
+├── SupabasePositionRepository.ts       # Repositorio cargos
 └── SupabaseModuleRepository.ts         # Repositorio módulos
 
 src/ui/
@@ -197,4 +215,4 @@ src/ui/
 
 ---
 
-*Actualizado: 2025-08-17 - Sprint 5 COMPLETADO Y ESTABILIZADO - Error PGRST204 resuelto, lint corregido, código optimizado*
+*Actualizado: 2025-08-18 - Sprint 6 COMPLETADO - Gestión empresa+cargo implementada, modal unificado, arquitectura BD corregida, funcionalidad 100% operativa*

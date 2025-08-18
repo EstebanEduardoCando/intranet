@@ -56,6 +56,7 @@ import { DeleteUser } from '../../../application/user/DeleteUser';
 import { ManageUserRoles } from '../../../application/user/ManageUserRoles';
 import { UpdateUserProfile } from '../../../application/user/UpdateUserProfile';
 import { RegisterUser } from '../../../application/auth/RegisterUser';
+import { AssignUserCompanyAndPosition } from '../../../application/user/AssignUserCompanyAndPosition';
 import { GetCompanies } from '../../../application/company/GetCompanies';
 import { GetPositions } from '../../../application/position/GetPositions';
 import { GetRoles } from '../../../application/role/GetRoles';
@@ -84,19 +85,7 @@ const getCompanies = new GetCompanies(companyRepository);
 const getPositions = new GetPositions(positionRepository);
 const getRoles = new GetRoles(roleRepository);
 const registerUser = new RegisterUser(authService);
-
-// Re-create missing use cases (without console.logs)
-const assignUserCompany = {
-  execute: async (params: any) => {
-    throw new Error('Función no disponible: empresa no configurada en BD');
-  }
-};
-
-const assignUserPosition = {
-  execute: async (params: any) => {
-    throw new Error('Función no disponible: cargo no configurado en BD');
-  }
-};
+const assignUserCompanyAndPosition = new AssignUserCompanyAndPosition(userRepository, companyRepository, positionRepository);
 
 const UserManagement: React.FC = () => {
   const { showError, showSuccess } = useNotifications();
@@ -111,8 +100,7 @@ const UserManagement: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
-  const [assignCompanyDialogOpen, setAssignCompanyDialogOpen] = useState(false);
-  const [assignPositionDialogOpen, setAssignPositionDialogOpen] = useState(false);
+  const [assignCompanyPositionDialogOpen, setAssignCompanyPositionDialogOpen] = useState(false);
   const [manageRolesDialogOpen, setManageRolesDialogOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -334,19 +322,12 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleAssignCompany = async () => {
+  const handleAssignCompanyAndPosition = async () => {
     if (!selectedUser) return;
     
     setSelectedCompanyId(selectedUser.company?.companyId?.toString() || '');
-    setAssignCompanyDialogOpen(true);
-    handleMenuClose();
-  };
-
-  const handleAssignPosition = async () => {
-    if (!selectedUser) return;
-    
     setSelectedPositionId(selectedUser.position?.positionId?.toString() || '');
-    setAssignPositionDialogOpen(true);
+    setAssignCompanyPositionDialogOpen(true);
     handleMenuClose();
   };
 
@@ -358,42 +339,17 @@ const UserManagement: React.FC = () => {
     handleMenuClose();
   };
 
-  const confirmAssignCompany = async () => {
-    if (!selectedUser || !selectedCompanyId) return;
-    
-    setIsAssigning(true);
-    try {
-      await assignUserCompany.execute({
-        userId: selectedUser.id,
-        companyId: parseInt(selectedCompanyId)
-      });
-      
-      // Refresh users list
-      const usersResponse = await getUsers.execute({
-        page,
-        limit: rowsPerPage,
-        searchTerm: searchTerm || undefined
-      });
-      
-      setUsers(usersResponse.users);
-      setTotalUsers(usersResponse.total);
-      setAssignCompanyDialogOpen(false);
-      setSelectedUser(null);
-      showSuccess('Empresa asignada correctamente');
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Error al asignar empresa');
-    } finally {
-      setIsAssigning(false);
+  const confirmAssignCompanyAndPosition = async () => {
+    if (!selectedUser || !selectedCompanyId || !selectedPositionId) {
+      showError('Debe seleccionar tanto empresa como cargo');
+      return;
     }
-  };
-
-  const confirmAssignPosition = async () => {
-    if (!selectedUser || !selectedPositionId) return;
     
     setIsAssigning(true);
     try {
-      await assignUserPosition.execute({
+      await assignUserCompanyAndPosition.execute({
         userId: selectedUser.id,
+        companyId: parseInt(selectedCompanyId),
         positionId: parseInt(selectedPositionId)
       });
       
@@ -406,11 +362,11 @@ const UserManagement: React.FC = () => {
       
       setUsers(usersResponse.users);
       setTotalUsers(usersResponse.total);
-      setAssignPositionDialogOpen(false);
+      setAssignCompanyPositionDialogOpen(false);
       setSelectedUser(null);
-      showSuccess('Cargo asignado correctamente');
+      showSuccess('Empresa y cargo asignados correctamente');
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Error al asignar cargo');
+      showError(error instanceof Error ? error.message : 'Error al asignar empresa y cargo');
     } finally {
       setIsAssigning(false);
     }
@@ -1044,17 +1000,11 @@ const UserManagement: React.FC = () => {
             </ListItemIcon>
             <ListItemText>Editar Usuario</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleAssignCompany} disabled>
+          <MenuItem onClick={handleAssignCompanyAndPosition}>
             <ListItemIcon>
               <BusinessIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Asignar Empresa (Próximamente)</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={handleAssignPosition} disabled>
-            <ListItemIcon>
-              <WorkIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Asignar Cargo (Próximamente)</ListItemText>
+            <ListItemText>Asignar Empresa y Cargo</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleManageRoles}>
             <ListItemIcon>
@@ -1403,27 +1353,29 @@ const UserManagement: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Assign Company Dialog */}
+        {/* Assign Company and Position Dialog */}
         <Dialog
-          open={assignCompanyDialogOpen}
-          onClose={() => !isAssigning && setAssignCompanyDialogOpen(false)}
+          open={assignCompanyPositionDialogOpen}
+          onClose={() => !isAssigning && setAssignCompanyPositionDialogOpen(false)}
           maxWidth="sm"
           fullWidth
         >
-          <DialogTitle>Asignar Empresa</DialogTitle>
+          <DialogTitle>Asignar Empresa y Cargo</DialogTitle>
           <DialogContent>
             <Typography variant="body2" sx={{ mb: 2 }}>
               Usuario: <strong>{selectedUser && getPersonDisplayName(selectedUser.person)}</strong>
             </Typography>
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel>Empresa</InputLabel>
+            
+            <FormControl fullWidth sx={{ mt: 2, mb: 2 }}>
+              <InputLabel>Empresa *</InputLabel>
               <Select
                 value={selectedCompanyId}
-                label="Empresa"
+                label="Empresa *"
                 onChange={(e) => setSelectedCompanyId(e.target.value)}
                 disabled={isAssigning}
+                required
               >
-                <MenuItem value="">Sin empresa</MenuItem>
+                <MenuItem value="">Seleccionar empresa</MenuItem>
                 {companies.map((company) => (
                   <MenuItem key={company.companyId} value={company.companyId.toString()}>
                     {company.name}
@@ -1431,38 +1383,17 @@ const UserManagement: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setAssignCompanyDialogOpen(false)} disabled={isAssigning}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmAssignCompany} variant="contained" disabled={isAssigning}>
-              {isAssigning ? 'Asignando...' : 'Asignar'}
-            </Button>
-          </DialogActions>
-        </Dialog>
 
-        {/* Assign Position Dialog */}
-        <Dialog
-          open={assignPositionDialogOpen}
-          onClose={() => !isAssigning && setAssignPositionDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Asignar Cargo</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              Usuario: <strong>{selectedUser && getPersonDisplayName(selectedUser.person)}</strong>
-            </Typography>
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel>Cargo</InputLabel>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Cargo *</InputLabel>
               <Select
                 value={selectedPositionId}
-                label="Cargo"
+                label="Cargo *"
                 onChange={(e) => setSelectedPositionId(e.target.value)}
                 disabled={isAssigning}
+                required
               >
-                <MenuItem value="">Sin cargo</MenuItem>
+                <MenuItem value="">Seleccionar cargo</MenuItem>
                 {positions.map((position) => (
                   <MenuItem key={position.positionId} value={position.positionId.toString()}>
                     {position.name}
@@ -1470,12 +1401,21 @@ const UserManagement: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
+
+            <Typography variant="caption" color="text.secondary">
+              * Ambos campos son requeridos para crear una asignación completa
+            </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAssignPositionDialogOpen(false)} disabled={isAssigning}>
+            <Button onClick={() => setAssignCompanyPositionDialogOpen(false)} disabled={isAssigning}>
               Cancelar
             </Button>
-            <Button onClick={confirmAssignPosition} variant="contained" disabled={isAssigning}>
+            <Button 
+              onClick={confirmAssignCompanyAndPosition} 
+              variant="contained" 
+              disabled={isAssigning || !selectedCompanyId || !selectedPositionId}
+              startIcon={isAssigning ? <CircularProgress size={20} /> : <BusinessIcon />}
+            >
               {isAssigning ? 'Asignando...' : 'Asignar'}
             </Button>
           </DialogActions>

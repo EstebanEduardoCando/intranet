@@ -23,10 +23,15 @@
       "Bash(npx ts-node:*)",
       "Bash(mv:*)",
       "Bash(cp:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npx node:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": [],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "/mnt/c/Desarrollos/Intranet"
+    ]
   }
 }
