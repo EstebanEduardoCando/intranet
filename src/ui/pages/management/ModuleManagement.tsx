@@ -141,6 +141,7 @@ const ModuleManagement: React.FC = () => {
   // Estados de formulario
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [formData, setFormData] = useState({
+    code: '',
     name: '',
     description: '',
     route: '',
@@ -161,7 +162,7 @@ const ModuleManagement: React.FC = () => {
     setError(null);
     
     try {
-      const result = await getModules.execute();
+      const result = await moduleRepository.getAllModules();
       
       // Crear una lista plana para filtrado y búsqueda
       let filteredModules = [...result];
@@ -169,6 +170,7 @@ const ModuleManagement: React.FC = () => {
       if (filter.searchText) {
         const searchLower = filter.searchText.toLowerCase();
         filteredModules = filteredModules.filter(module =>
+          module.code.toLowerCase().includes(searchLower) ||
           module.name.toLowerCase().includes(searchLower) ||
           module.description?.toLowerCase().includes(searchLower) ||
           module.route?.toLowerCase().includes(searchLower)
@@ -305,6 +307,7 @@ const ModuleManagement: React.FC = () => {
   // Handlers de diálogos
   const handleCreateClick = () => {
     setFormData({
+      code: '',
       name: '',
       description: '',
       route: '',
@@ -320,6 +323,7 @@ const ModuleManagement: React.FC = () => {
   const handleEditClick = (module: Module) => {
     setSelectedModule(module);
     setFormData({
+      code: module.code,
       name: module.name,
       description: module.description || '',
       route: module.route || '',
@@ -362,34 +366,84 @@ const ModuleManagement: React.FC = () => {
 
   const handleCreateSubmit = async () => {
     try {
-      // TODO: Implementar creación de módulo con auditoría
+      if (!user?.id) {
+        showError('Usuario no autenticado');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.code || !formData.name) {
+        showError('El código y nombre son requeridos');
+        return;
+      }
+
+      await moduleRepository.create({
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        route: formData.route,
+        icon: formData.icon,
+        parentId: formData.parentId || undefined,
+        order: formData.order,
+        isVisible: formData.isVisible,
+        isActive: true,
+        requiredRole: formData.requiredRole
+      }, user.id);
+
       showSuccess('Módulo creado exitosamente');
       setCreateDialogOpen(false);
       loadModules();
     } catch (error) {
-      showError('Error al crear módulo');
+      showError(error instanceof Error ? error.message : 'Error al crear módulo');
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      // TODO: Implementar edición de módulo con auditoría
+      if (!user?.id || !selectedModule) {
+        showError('Usuario no autenticado o módulo no seleccionado');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.code || !formData.name) {
+        showError('El código y nombre son requeridos');
+        return;
+      }
+
+      await moduleRepository.update(selectedModule.moduleId, {
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        route: formData.route,
+        icon: formData.icon,
+        parentId: formData.parentId || undefined,
+        order: formData.order,
+        isVisible: formData.isVisible,
+        requiredRole: formData.requiredRole
+      }, user.id);
+
       showSuccess('Módulo actualizado exitosamente');
       setEditDialogOpen(false);
       loadModules();
     } catch (error) {
-      showError('Error al actualizar módulo');
+      showError(error instanceof Error ? error.message : 'Error al actualizar módulo');
     }
   };
 
   const handleDeleteConfirm = async () => {
     try {
-      // TODO: Implementar eliminación lógica con auditoría
+      if (!user?.id || !selectedModule) {
+        showError('Usuario no autenticado o módulo no seleccionado');
+        return;
+      }
+
+      await moduleRepository.delete(selectedModule.moduleId, user.id);
       showSuccess('Módulo eliminado exitosamente');
       setDeleteDialogOpen(false);
       loadModules();
     } catch (error) {
-      showError('Error al eliminar módulo');
+      showError(error instanceof Error ? error.message : 'Error al eliminar módulo');
     }
   };
 
@@ -686,6 +740,16 @@ const ModuleManagement: React.FC = () => {
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField
+              label="Código del módulo"
+              value={formData.code}
+              onChange={(e) => handleFormChange('code', e.target.value.toUpperCase())}
+              placeholder="ADMIN, HR.EMPLOYEES"
+              required
+              fullWidth
+              helperText="Código único para identificar el módulo (ej: ADMIN, HR.EMPLOYEES)"
+            />
+            
+            <TextField
               label="Nombre del módulo"
               value={formData.name}
               onChange={(e) => handleFormChange('name', e.target.value)}
@@ -798,7 +862,7 @@ const ModuleManagement: React.FC = () => {
           <Button 
             onClick={createDialogOpen ? handleCreateSubmit : handleEditSubmit}
             variant="contained"
-            disabled={!formData.name.trim()}
+            disabled={!formData.code.trim() || !formData.name.trim()}
           >
             {createDialogOpen ? 'Crear Módulo' : 'Guardar Cambios'}
           </Button>

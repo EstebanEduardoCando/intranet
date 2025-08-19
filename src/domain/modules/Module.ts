@@ -26,10 +26,10 @@ export interface Module {
   /** Sort order for display */
   order: number;
   
-  /** Sort order (alias) */
+  /** Sort order (alias for compatibility) */
   sortOrder: number;
   
-  /** Whether the module is visible */
+  /** Whether the module is visible in navigation */
   isVisible: boolean;
   
   /** Whether the module is active */
@@ -55,6 +55,76 @@ export interface Module {
   
   /** Child modules (for hierarchical display) */
   children?: Module[];
+}
+
+/**
+ * Module creation data
+ */
+export interface CreateModuleData {
+  /** Parent module ID (optional) */
+  parentId?: string;
+  
+  /** Unique code for the module */
+  code: string;
+  
+  /** Display name */
+  name: string;
+  
+  /** Description (optional) */
+  description?: string;
+  
+  /** Icon (optional) */
+  icon?: string;
+  
+  /** Route path (optional) */
+  route?: string;
+  
+  /** Sort order */
+  order?: number;
+  
+  /** Visibility flag */
+  isVisible?: boolean;
+  
+  /** Active flag */
+  isActive?: boolean;
+  
+  /** Required role */
+  requiredRole?: string;
+}
+
+/**
+ * Module update data
+ */
+export interface UpdateModuleData {
+  /** Parent module ID */
+  parentId?: string;
+  
+  /** Unique code */
+  code?: string;
+  
+  /** Display name */
+  name?: string;
+  
+  /** Description */
+  description?: string;
+  
+  /** Icon */
+  icon?: string;
+  
+  /** Route path */
+  route?: string;
+  
+  /** Sort order */
+  order?: number;
+  
+  /** Visibility flag */
+  isVisible?: boolean;
+  
+  /** Active flag */
+  isActive?: boolean;
+  
+  /** Required role */
+  requiredRole?: string;
 }
 
 /**

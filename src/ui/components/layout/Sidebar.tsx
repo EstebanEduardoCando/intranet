@@ -36,7 +36,15 @@ import {
   AccountBalance as AccountBalanceIcon,
   School as SchoolIcon,
   Store as StoreIcon,
-  LibraryBooks as LibraryBooksIcon
+  LibraryBooks as LibraryBooksIcon,
+  // Iconos adicionales del ModuleManagement
+  Assessment as AssessmentIcon,
+  MonetizationOn as MoneyIcon,
+  Inventory as InventoryIcon,
+  LocalShipping as ShippingIcon,
+  Support as SupportIcon,
+  FilePresent as FileIcon,
+  Extension as ModuleIcon
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 import { GetModules } from '../../../application/modules/GetModules';
@@ -69,36 +77,58 @@ const convertModuleToMenuItem = (module: Module): MenuItemType => {
     id: module.code,
     title: module.name,
     icon: getModuleIcon(module.icon || module.code),
-    path: hasChildren ? undefined : moduleCodeToPath(module.code),
+    path: hasChildren ? undefined : (module.route || moduleCodeToPath(module.code)),
     children: module.children?.map(convertModuleToMenuItem)
   };
 };
 
 /**
- * Get appropriate icon for module based on code/icon
+ * Get appropriate icon for module based on icon name from database
  */
-const getModuleIcon = (iconCode: string): React.ReactNode => {
+const getModuleIcon = (iconName: string): React.ReactNode => {
+  // Mapeo de nombres de iconos de la BD a componentes React
   const iconMap: Record<string, React.ReactNode> = {
+    // Iconos principales
+    'DashboardIcon': <DashboardIcon />,
+    'PeopleIcon': <PeopleIcon />,
+    'BusinessIcon': <BusinessIcon />,
+    'WorkIcon': <WorkIcon />,
+    'SecurityIcon': <SecurityIcon />,
+    'SettingsIcon': <SettingsIcon />,
+    'AssessmentIcon': <AssessmentIcon />,
+    'AssignmentIcon': <AssignmentIcon />,
+    'StoreIcon': <StoreIcon />,
+    'MoneyIcon': <MoneyIcon />,
+    'InventoryIcon': <InventoryIcon />,
+    'ShippingIcon': <ShippingIcon />,
+    'AnalyticsIcon': <AnalyticsIcon />,
+    'SupportIcon': <SupportIcon />,
+    'EmailIcon': <EmailIcon />,
+    'EventIcon': <EventIcon />,
+    'FileIcon': <FileIcon />,
+    'ModuleIcon': <ModuleIcon />,
+    'AppsIcon': <AppsIcon />,
+    'HelpIcon': <HelpIcon />,
+    'AccountBalanceIcon': <AccountBalanceIcon />,
+    'SchoolIcon': <SchoolIcon />,
+    'LibraryBooksIcon': <LibraryBooksIcon />,
+    
+    // Fallbacks para códigos legacy
     'DASHBOARD': <DashboardIcon />,
     'ADMIN': <SettingsIcon />,
     'HR': <PeopleIcon />,
-    'HR.EMPLOYEES': <PeopleIcon />,
-    'HR.DEPARTMENTS': <BusinessIcon />,
     'FINANCE': <AccountBalanceIcon />,
-    'FINANCE.ACCOUNTING': <LibraryBooksIcon />,
-    'FINANCE.BUDGET': <AnalyticsIcon />,
     'OPERATIONS': <WorkIcon />,
-    'OPERATIONS.PROJECTS': <AssignmentIcon />,
-    'OPERATIONS.INVENTORY': <StoreIcon />,
     'TRAINING': <SchoolIcon />,
     'APPS': <AppsIcon />,
     'REPORTS': <AnalyticsIcon />,
     'HELP': <HelpIcon />,
-    // Default icons based on common patterns
-    'default': <CircleIcon />
+    
+    // Default
+    'default': <ModuleIcon />
   };
 
-  return iconMap[iconCode.toUpperCase()] || iconMap['default'];
+  return iconMap[iconName] || iconMap['default'];
 };
 
 const Sidebar: React.FC<Props> = ({ mobileOpen, onDrawerToggle, drawerWidth }) => {
