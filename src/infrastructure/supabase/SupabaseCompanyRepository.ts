@@ -31,9 +31,11 @@ export class SupabaseCompanyRepository implements CompanyRepository {
       name: row.trade_name || row.legal_name, // Use trade_name as display name
       description: row.legal_name, // Use legal_name as description
       isActive: row.is_active,
+      isDeleted: false, // TODO: Add is_deleted field to real schema
       address: row.address || undefined,
       phone: row.contact_phone || undefined,
       email: row.contact_email || undefined,
+      website: row.website || undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     };

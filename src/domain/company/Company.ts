@@ -23,6 +23,21 @@ export interface Company {
   /** Company email */
   email?: string;
   
+  /** Company website */
+  website?: string;
+  
+  /** Whether the company is deleted (soft delete) */
+  isDeleted: boolean;
+  
+  /** Version for optimistic locking */
+  version?: number;
+  
+  /** User who created the company */
+  createdBy?: string;
+  
+  /** User who last updated the company */
+  updatedBy?: string;
+  
   /** Timestamp when the company was created */
   createdAt: Date;
   
@@ -39,6 +54,7 @@ export interface CreateCompanyData {
   address?: string;
   phone?: string;
   email?: string;
+  website?: string;
 }
 
 /**
@@ -50,5 +66,7 @@ export interface UpdateCompanyData {
   address?: string;
   phone?: string;
   email?: string;
+  website?: string;
   isActive?: boolean;
+  isDeleted?: boolean;
 }

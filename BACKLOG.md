@@ -38,38 +38,80 @@
 
 ---
 
-## 🎯 Próximos Sprints
+## 🎯 Sprint 7: Administración de Catálogos y Auditoría
 
-### **Sprint 7: Performance y Optimización** 🔸
-**Tiempo**: 70 min | **Prioridad**: Media
+### **7.1 Administración de Catálogos** 🔴
+**Tiempo**: 240 min | **Prioridad**: Alta
 
 **Tareas**:
-- [ ] **7.1**: Bundle optimization (25 min) - Code splitting, lazy loading
-- [ ] **7.2**: Error states mejorados (20 min) - Error boundary, retry
-- [ ] **7.3**: Tests automatizados (15 min) - Casos críticos
-- [ ] **7.4**: Verificación contraseña actual (10 min) - ChangePassword.ts:21 (Alta prioridad)
+- [ ] **7.1.1**: Página Administración Empresas (60 min) - CRUD completo con auditoría
+- [ ] **7.1.2**: Página Administración Cargos (50 min) - CRUD completo con auditoría  
+- [ ] **7.1.3**: Página Administración Roles (50 min) - CRUD completo con auditoría
+- [ ] **7.1.4**: Página Administración Módulos (80 min) - CRUD + gestión iconos + jerarquías
 
-**Criterios**: Bundle <400kB, UX robusta, tests principales
+**Funcionalidades**:
+- ✅ CRUD completo para cada catálogo
+- ✅ Registro histórico automático de cambios
+- ✅ Identificación de usuario que realiza cambios
+- ✅ Soft delete con posibilidad de restaurar
+- ✅ Versionado de registros
+
+### **7.2 Notificaciones Persistentes** 🔴  
+**Tiempo**: 90 min | **Prioridad**: Alta
+
+**Tareas**:
+- [ ] **7.2.1**: Modelo de datos notificaciones (20 min) - BD + migraciones
+- [ ] **7.2.2**: Servicio persistencia notificaciones (30 min) - Repositorio + casos de uso  
+- [ ] **7.2.3**: Actualizar NotificationContext (40 min) - Integrar persistencia + sincronización
+
+**Funcionalidades**:
+- ✅ Notificaciones persisten en BD por usuario
+- ✅ Recuperación de notificaciones al login
+- ✅ Marcado como leído/no leído
+- ✅ Historial de notificaciones
+- ✅ Configuración de retención
+
+### **7.3 Mejoras UX** 🟡
+**Tiempo**: 30 min | **Prioridad**: Media
+
+**Tareas**:
+- [x] **7.3.1**: Rol dinámico en Header (10 min) - **COMPLETADO**
+- [ ] **7.3.2**: Pantalla Historial de Cambios (20 min) - Vista consolidada de auditoría
+
+**Funcionalidades**:
+- ✅ Header muestra rol real del usuario
+- ✅ Pantalla para consultar cambios históricos
+- ✅ Filtros por fecha, usuario, tabla, operación
+
+**Total Sprint 7**: 360 min (6 horas)
 
 ---
 
-### **Sprint 8: Funcionalidades Avanzadas** 🔸
-**Tiempo**: 85 min | **Prioridad**: Media-Baja
+## 📋 **BACKLOG COMÚN - Tareas Futuras**
 
-**Tareas**:
-- [ ] **8.1**: Upload Avatar (30 min) - Supabase Storage integration
-- [ ] **8.2**: OAuth Google (25 min) - Config + UI
-- [ ] **8.3**: Notificaciones push (20 min) - Sistema básico
-- [ ] **8.4**: Filtrado por usuario módulos (10 min) - GetModules.ts:7 (Media prioridad)
+### **🚀 Funcionalidades Avanzadas**
+- [ ] **Performance**: Bundle optimization - Code splitting, lazy loading
+- [ ] **Performance**: Error states mejorados - Error boundary, retry  
+- [ ] **Features**: Upload Avatar - Supabase Storage integration
+- [ ] **Features**: OAuth Google - Config + UI
+- [ ] **Features**: Notificaciones push - Sistema básico
+- [ ] **Features**: Filtrado por usuario módulos - GetModules.ts:7
+- [ ] **Features**: Verificación contraseña actual - ChangePassword.ts:21
+- [ ] **Config**: Pantalla de configuraciones - Implementar CONFIGURACIONES.md
 
----
+### **🧪 Testing y Calidad**
+- [ ] **Testing**: Tests automatizados - Unit + E2E
+- [ ] **Testing**: Tests casos críticos
+- [ ] **Quality**: Documentación completa - README + TypeDoc
+- [ ] **Quality**: Code review automatizado
+- [ ] **Quality**: Performance monitoring
 
-### **Sprint 9: Testing y Documentación** 🔹
-**Tiempo**: 50 min | **Prioridad**: Baja
-
-**Tareas**:
-- [ ] **9.1**: Tests automatizados (30 min) - Unit + E2E
-- [ ] **9.2**: Documentación completa (20 min) - README + TypeDoc
+### **🔧 Optimizaciones**
+- [ ] **Performance**: Bundle <400kB
+- [ ] **Performance**: Lazy loading de rutas
+- [ ] **UX**: Loading states mejorados
+- [ ] **UX**: Error handling robusto
+- [ ] **Security**: Audit security vulnerabilities
 
 ---
 
@@ -93,14 +135,14 @@
 | Sprint | Estado | Prioridad | Tiempo | Enfoque |
 |--------|--------|-----------|--------|---------|
 | 1-6 | ✅ | - | 480 min | **COMPLETADOS** |
-| 7 | ⏳ | 🔶 Media | 70 min | Performance + Optimización |
-| 8 | ⏳ | 🔸 Media-Baja | 85 min | Features Avanzadas |
-| 9 | ⏳ | 🔹 Baja | 50 min | Testing + Docs |
+| 7 | ⏳ | 🔴 Alta | 360 min | **Administración Catálogos + Auditoría** |
+| Backlog | ⏳ | Variable | ~300 min | Features, Testing, Performance |
 
-**Total Pendiente**: 3h 25min
+**Total Pendiente Sprint 7**: 6 horas  
+**Total Backlog**: ~5 horas
 
 ## 🎯 Próxima Acción
-**COMENZAR SPRINT 7** - Performance y optimización del bundle.
+**COMENZAR SPRINT 7** - Administración de catálogos con sistema de auditoría completo.
 
 ## 🎉 **Logros Destacados Sprint 6**
 - ✅ **Gestión Empresa+Cargo**: Modal unificado completamente funcional
@@ -116,4 +158,18 @@
 
 ---
 
-*Actualizado: 2025-08-18 - Sprint 6 COMPLETADO - Gestión empresa+cargo unificada implementada, arquitectura BD corregida, funcionalidad 100% operativa*
+---
+
+## 🎉 **Logros Destacados Sprint 7 (Planificación)**
+- ✅ **Sistema de Auditoría**: Registro histórico completo de cambios implementado
+- ✅ **Notificaciones Persistentes**: Modelo de datos y persistencia por usuario diseñado  
+- ✅ **Administración de Catálogos**: 4 páginas de administración planificadas
+- ✅ **Rol Dinámico**: Header corregido para mostrar rol real del usuario
+- ✅ **Base de Datos**: Esquema completo de auditoría y configuraciones diseñado
+- ✅ **Triggers Automáticos**: Sistema de auditoría automática en BD
+- ✅ **Pantalla Historial**: Consulta de cambios históricos planificada
+- ✅ **Backlog Reorganizado**: Tareas futuras organizadas por categoría
+
+---
+
+*Actualizado: 2025-08-18 - Sprint 7 PLANIFICADO - Sistema de administración de catálogos con auditoría completa, notificaciones persistentes, arquitectura de base de datos expandida*

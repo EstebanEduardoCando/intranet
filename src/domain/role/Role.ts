@@ -11,8 +11,23 @@ export interface Role {
   /** Role description */
   description?: string;
   
+  /** Role permissions array */
+  permissions?: string[];
+  
   /** Whether the role is active */
   isActive: boolean;
+  
+  /** Whether the role is deleted (soft delete) */
+  isDeleted: boolean;
+  
+  /** Version for optimistic locking */
+  version?: number;
+  
+  /** User who created the role */
+  createdBy?: string;
+  
+  /** User who last updated the role */
+  updatedBy?: string;
   
   /** Timestamp when the role was created */
   createdAt: Date;
@@ -44,6 +59,7 @@ export interface UserRole {
 export interface CreateRoleData {
   name: string;
   description?: string;
+  permissions?: string[];
 }
 
 /**
@@ -52,5 +68,7 @@ export interface CreateRoleData {
 export interface UpdateRoleData {
   name?: string;
   description?: string;
+  permissions?: string[];
   isActive?: boolean;
+  isDeleted?: boolean;
 }

@@ -10,6 +10,12 @@ import Dashboard from './pages/Dashboard';
 import Configuracion from './pages/Configuracion';
 import Profile from './pages/Profile';
 import UserManagement from './pages/management/UserManagement';
+import CompanyManagement from './pages/management/CompanyManagement';
+import PositionManagement from './pages/management/PositionManagement';
+import RoleManagement from './pages/management/RoleManagement';
+import ModuleManagement from './pages/management/ModuleManagement';
+import AuditHistory from './pages/management/AuditHistory';
+import TestNotifications from './pages/TestNotifications';
 import PlaceholderPage from './pages/PlaceholderPage';
 import LandingRegistro from './pages/LandingRegistro';
 import ResetPassword from './pages/ResetPassword';
@@ -151,11 +157,63 @@ const App: React.FC = () => {
                 </PrivateRoute>
               }
             />
+            
+            {/* Sprint 7 - Catalog Management Routes */}
+            <Route
+              path="/administration/companies"
+              element={
+                <PrivateRoute>
+                  <CompanyManagement />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/administration/positions"
+              element={
+                <PrivateRoute>
+                  <PositionManagement />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/administration/roles"
+              element={
+                <PrivateRoute>
+                  <RoleManagement />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/administration/modules"
+              element={
+                <PrivateRoute>
+                  <ModuleManagement />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/administration/audit"
+              element={
+                <PrivateRoute>
+                  <AuditHistory />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/test/notifications"
+              element={
+                <PrivateRoute>
+                  <TestNotifications />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Legacy HR Routes */}
             <Route
               path="/hr/positions"
               element={
                 <PrivateRoute>
-                  <PlaceholderPage moduleName="Gestión de Cargos" moduleDescription="Administración de posiciones y asignaciones laborales" />
+                  <PositionManagement />
                 </PrivateRoute>
               }
             />
@@ -168,12 +226,12 @@ const App: React.FC = () => {
               }
             />
             
-            {/* Admin Module Routes */}
+            {/* Legacy Admin Routes */}
             <Route
               path="/admin/users"
               element={
                 <PrivateRoute>
-                  <PlaceholderPage moduleName="Administración de Usuarios" moduleDescription="Gestión avanzada de usuarios del sistema" />
+                  <UserManagement />
                 </PrivateRoute>
               }
             />
@@ -181,7 +239,7 @@ const App: React.FC = () => {
               path="/admin/companies"
               element={
                 <PrivateRoute>
-                  <PlaceholderPage moduleName="Gestión de Empresas" moduleDescription="Administración de empresas y organizaciones" />
+                  <CompanyManagement />
                 </PrivateRoute>
               }
             />
@@ -189,7 +247,7 @@ const App: React.FC = () => {
               path="/admin/roles"
               element={
                 <PrivateRoute>
-                  <PlaceholderPage moduleName="Gestión de Roles" moduleDescription="Administración de roles y permisos del sistema" />
+                  <RoleManagement />
                 </PrivateRoute>
               }
             />

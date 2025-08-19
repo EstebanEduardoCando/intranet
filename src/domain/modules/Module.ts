@@ -3,10 +3,10 @@
  */
 export interface Module {
   /** Unique identifier for the module */
-  moduleId: number;
+  moduleId: string;
   
   /** Parent module ID for hierarchical structure (null = main module) */
-  parentId?: number;
+  parentId?: string;
   
   /** Unique code for the module (e.g., "ADMIN", "HR.EMPLOYEES") */
   code: string;
@@ -20,11 +20,32 @@ export interface Module {
   /** Icon name/class for the module */
   icon?: string;
   
+  /** Route path for navigation */
+  route?: string;
+  
   /** Sort order for display */
+  order: number;
+  
+  /** Sort order (alias) */
   sortOrder: number;
+  
+  /** Whether the module is visible */
+  isVisible: boolean;
   
   /** Whether the module is active */
   isActive: boolean;
+  
+  /** Required role to access this module */
+  requiredRole?: string;
+  
+  /** Version for optimistic locking */
+  version?: number;
+  
+  /** User who created the module */
+  createdBy?: string;
+  
+  /** User who last updated the module */
+  updatedBy?: string;
   
   /** Timestamp when the module was created */
   createdAt: Date;
@@ -51,7 +72,7 @@ export interface NavigationModule extends Module {
  * Helper function to build module hierarchy
  */
 export function buildModuleHierarchy(modules: Module[]): Module[] {
-  const moduleMap = new Map<number, Module>();
+  const moduleMap = new Map<string, Module>();
   const rootModules: Module[] = [];
 
   // Create map and initialize children arrays

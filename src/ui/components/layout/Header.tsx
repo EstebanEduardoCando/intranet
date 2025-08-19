@@ -319,7 +319,21 @@ const Header: React.FC<Props> = ({ onMenuClick, onSidebarToggle, drawerWidth }) 
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               {user?.email || 'correo@ejemplo.com'}
             </Typography>
-            <Chip label="Administrador" size="small" color="primary" sx={{ mt: 0.5 }} />
+            {user?.roles && user.roles.length > 0 ? (
+              <Chip 
+                label={user.roles[0].name} 
+                size="small" 
+                color="primary" 
+                sx={{ mt: 0.5 }} 
+              />
+            ) : (
+              <Chip 
+                label="Usuario" 
+                size="small" 
+                color="default" 
+                sx={{ mt: 0.5 }} 
+              />
+            )}
           </Box>
           <Divider />
           <MenuItem onClick={() => { handleProfileClose(); navigate('/profile'); }}>
