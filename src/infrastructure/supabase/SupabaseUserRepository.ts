@@ -134,23 +134,26 @@ export class SupabaseUserRepository implements UserRepository {
         companyId: companyData.company_id,
         name: companyData.trade_name || companyData.legal_name,
         isActive: companyData.is_active,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        isDeleted: false,
+        createdAt: new Date(companyData.created_at || new Date()),
+        updatedAt: new Date(companyData.updated_at || new Date())
       } : undefined,
       position: positionData ? {
         positionId: positionData.position_id,
         name: positionData.name,
-        description: positionData.description,
-        department: positionData.level, // Mapping level to department
+        description: positionData.description || undefined,
+        level: positionData.level || undefined,
         isActive: positionData.is_active,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        isDeleted: false,
+        createdAt: new Date(positionData.created_at || new Date()),
+        updatedAt: new Date(positionData.updated_at || new Date())
       } : undefined,
       roles: roles.map(role => ({
         roleId: role.role_id,
         name: role.name,
         description: role.description || undefined,
         isActive: role.is_active,
+        isDeleted: false,
         createdAt: new Date(role.created_at),
         updatedAt: new Date(role.updated_at)
       }))

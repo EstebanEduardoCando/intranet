@@ -31,7 +31,8 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -45,14 +46,20 @@ import {
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { Role } from '../../../domain/role/Role';
+import { UpdateRolePermissionsData } from '../../../domain/role/RolePermission';
+import { Module } from '../../../domain/modules/Module';
 import { GetRoles } from '../../../application/role/GetRoles';
+import { GetModules } from '../../../application/modules/GetModules';
 import { SupabaseRoleRepository } from '../../../infrastructure/supabase/SupabaseRoleRepository';
+import { SupabaseModuleRepository } from '../../../infrastructure/supabase/SupabaseModuleRepository';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useAuthStore } from '../../store/useAuth';
 
 // Dependency injection
 const roleRepository = new SupabaseRoleRepository();
 const getRoles = new GetRoles(roleRepository);
+const moduleRepository = new SupabaseModuleRepository();
+const getModules = new GetModules(moduleRepository);
 
 interface RoleFilter {
   searchText: string;
@@ -89,6 +96,7 @@ const RoleManagement: React.FC = () => {
   
   // Estados
   const [roles, setRoles] = useState<Role[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -120,9 +128,28 @@ const RoleManagement: React.FC = () => {
     permissions: [] as string[]
   });
   
+  // Permisos de módulos para el rol seleccionado
+  const [modulePermissions, setModulePermissions] = useState<Map<string, {
+    canView: boolean;
+    canCreate: boolean;
+    canEdit: boolean;
+    canDelete: boolean;
+    canExecute: boolean;
+  }>>(new Map());
+  
   // Menú de acciones
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [actionRole, setActionRole] = useState<Role | null>(null);
+
+  // Cargar módulos
+  const loadModules = async () => {
+    try {
+      const result = await getModules.execute();
+      setModules(result);
+    } catch (error) {
+      console.error('Error loading modules:', error);
+    }
+  };
 
   // Cargar roles
   const loadRoles = async () => {
@@ -195,6 +222,10 @@ const RoleManagement: React.FC = () => {
 
   // Efectos
   useEffect(() => {
+    loadModules();
+  }, []);
+
+  useEffect(() => {
     loadRoles();
   }, [page, rowsPerPage, filter]);
 
@@ -254,13 +285,47 @@ const RoleManagement: React.FC = () => {
     handleMenuClose();
   };
 
-  const handlePermissionsClick = (role: Role) => {
+  const handlePermissionsClick = async (role: Role) => {
     setSelectedRole(role);
     setFormData({
       name: role.name,
       description: role.description || '',
       permissions: role.permissions || []
     });
+    
+    // Cargar permisos existentes del rol
+    try {
+      const existingPermissions = await roleRepository.getModulePermissions(role.roleId);
+      const permissionsMap = new Map();
+      
+      // Inicializar con permisos por defecto (false)
+      modules.forEach(module => {
+        permissionsMap.set(module.moduleId, {
+          canView: false,
+          canCreate: false,
+          canEdit: false,
+          canDelete: false,
+          canExecute: false
+        });
+      });
+      
+      // Sobrescribir con permisos existentes
+      existingPermissions.forEach(permission => {
+        permissionsMap.set(permission.moduleId, {
+          canView: permission.canView,
+          canCreate: permission.canCreate,
+          canEdit: permission.canEdit,
+          canDelete: permission.canDelete,
+          canExecute: permission.canExecute
+        });
+      });
+      
+      setModulePermissions(permissionsMap);
+    } catch (error) {
+      console.error('Error loading permissions:', error);
+      showError('Error al cargar permisos');
+    }
+    
     setPermissionsDialogOpen(true);
     handleMenuClose();
   };
@@ -289,47 +354,125 @@ const RoleManagement: React.FC = () => {
     }));
   };
 
+  // Manejar cambios en permisos de módulo
+  const handleModulePermissionChange = (moduleId: string, permission: string, value: boolean) => {
+    setModulePermissions(prev => {
+      const newMap = new Map(prev);
+      const modulePerms = newMap.get(moduleId) || {
+        canView: false,
+        canCreate: false,
+        canEdit: false,
+        canDelete: false,
+        canExecute: false
+      };
+      
+      newMap.set(moduleId, {
+        ...modulePerms,
+        [permission]: value
+      });
+      
+      return newMap;
+    });
+  };
+
   const handleCreateSubmit = async () => {
     try {
-      // TODO: Implementar creación de rol con auditoría
+      if (!user?.id) {
+        showError('Usuario no autenticado');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.name.trim()) {
+        showError('El nombre del rol es requerido');
+        return;
+      }
+
+      await roleRepository.create({
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined
+      }, user.id);
+
       showSuccess('Rol creado exitosamente');
       setCreateDialogOpen(false);
       loadRoles();
     } catch (error) {
-      showError('Error al crear rol');
+      showError(error instanceof Error ? error.message : 'Error al crear rol');
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      // TODO: Implementar edición de rol con auditoría
+      if (!user?.id || !selectedRole) {
+        showError('Usuario no autenticado o rol no seleccionado');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.name.trim()) {
+        showError('El nombre del rol es requerido');
+        return;
+      }
+
+      await roleRepository.update(selectedRole.roleId, {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined
+      }, user.id);
+
       showSuccess('Rol actualizado exitosamente');
       setEditDialogOpen(false);
       loadRoles();
     } catch (error) {
-      showError('Error al actualizar rol');
+      showError(error instanceof Error ? error.message : 'Error al actualizar rol');
     }
   };
 
   const handlePermissionsSubmit = async () => {
     try {
-      // TODO: Implementar actualización de permisos con auditoría
+      if (!user?.id || !selectedRole) {
+        showError('Usuario no autenticado o rol no seleccionado');
+        return;
+      }
+
+      // Construir datos de permisos
+      const modulePermissionsData = Array.from(modulePermissions.entries()).map(([moduleId, permissions]) => ({
+        moduleId,
+        canView: permissions.canView,
+        canCreate: permissions.canCreate,
+        canEdit: permissions.canEdit,
+        canDelete: permissions.canDelete,
+        canExecute: permissions.canExecute
+      }));
+
+      const permissionUpdateData: UpdateRolePermissionsData = {
+        roleId: selectedRole.roleId,
+        modulePermissions: modulePermissionsData,
+        functionPermissions: [] // Por ahora solo manejamos módulos
+      };
+
+      await roleRepository.updatePermissions(permissionUpdateData, user.id);
+      
       showSuccess('Permisos actualizados exitosamente');
       setPermissionsDialogOpen(false);
       loadRoles();
     } catch (error) {
-      showError('Error al actualizar permisos');
+      showError(error instanceof Error ? error.message : 'Error al actualizar permisos');
     }
   };
 
   const handleDeleteConfirm = async () => {
     try {
-      // TODO: Implementar eliminación lógica con auditoría
+      if (!user?.id || !selectedRole) {
+        showError('Usuario no autenticado o rol no seleccionado');
+        return;
+      }
+
+      await roleRepository.delete(selectedRole.roleId, user.id);
       showSuccess('Rol eliminado exitosamente');
       setDeleteDialogOpen(false);
       loadRoles();
     } catch (error) {
-      showError('Error al eliminar rol');
+      showError(error instanceof Error ? error.message : 'Error al eliminar rol');
     }
   };
 
@@ -641,34 +784,84 @@ const RoleManagement: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Selecciona los permisos que tendrá este rol
+            Selecciona los permisos CRUD que tendrá este rol para cada módulo
           </Typography>
           
-          {Object.entries(getPermissionsByCategory()).map(([category, permissions]) => (
-            <Box key={category} sx={{ mb: 3 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                {category}
-              </Typography>
-              <List dense>
-                {permissions.map((permission) => (
-                  <ListItem key={permission.id} sx={{ pl: 0 }}>
-                    <ListItemText
-                      primary={permission.name}
-                      secondary={permission.id}
-                    />
-                    <ListItemSecondaryAction>
-                      <Switch
-                        edge="end"
-                        checked={formData.permissions.includes(permission.id)}
-                        onChange={() => handlePermissionToggle(permission.id)}
-                      />
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                ))}
-              </List>
-              <Divider />
-            </Box>
-          ))}
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Módulo</TableCell>
+                  <TableCell align="center">Ver</TableCell>
+                  <TableCell align="center">Crear</TableCell>
+                  <TableCell align="center">Editar</TableCell>
+                  <TableCell align="center">Eliminar</TableCell>
+                  <TableCell align="center">Ejecutar</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {modules.map((module) => {
+                  const permissions = modulePermissions.get(module.moduleId) || {
+                    canView: false,
+                    canCreate: false,
+                    canEdit: false,
+                    canDelete: false,
+                    canExecute: false
+                  };
+                  
+                  return (
+                    <TableRow key={module.moduleId}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {module.name}
+                        </Typography>
+                        {module.description && (
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {module.description}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={permissions.canView}
+                          onChange={(e) => handleModulePermissionChange(module.moduleId, 'canView', e.target.checked)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={permissions.canCreate}
+                          onChange={(e) => handleModulePermissionChange(module.moduleId, 'canCreate', e.target.checked)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={permissions.canEdit}
+                          onChange={(e) => handleModulePermissionChange(module.moduleId, 'canEdit', e.target.checked)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={permissions.canDelete}
+                          onChange={(e) => handleModulePermissionChange(module.moduleId, 'canDelete', e.target.checked)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={permissions.canExecute}
+                          onChange={(e) => handleModulePermissionChange(module.moduleId, 'canExecute', e.target.checked)}
+                          size="small"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPermissionsDialogOpen(false)}>

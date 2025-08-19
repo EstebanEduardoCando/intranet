@@ -25,8 +25,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Divider,
-  Autocomplete
+  Divider
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,29 +34,22 @@ import {
   MoreVert as MoreVertIcon,
   Search as SearchIcon,
   History as HistoryIcon,
-  Work as WorkIcon,
-  Business as BusinessIcon
+  Work as WorkIcon
 } from '@mui/icons-material';
 import { Position } from '../../../domain/position/Position';
-import { Company } from '../../../domain/company/Company';
 import { GetPositions } from '../../../application/position/GetPositions';
-import { GetCompanies } from '../../../application/company/GetCompanies';
 import { SupabasePositionRepository } from '../../../infrastructure/supabase/SupabasePositionRepository';
-import { SupabaseCompanyRepository } from '../../../infrastructure/supabase/SupabaseCompanyRepository';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useAuthStore } from '../../store/useAuth';
 
 // Dependency injection
 const positionRepository = new SupabasePositionRepository();
-const companyRepository = new SupabaseCompanyRepository();
 const getPositions = new GetPositions(positionRepository);
-const getCompanies = new GetCompanies(companyRepository);
 
 interface PositionFilter {
   searchText: string;
-  companyId: string;
   status: 'all' | 'active' | 'inactive';
-  sortBy: 'title' | 'company' | 'created_at' | 'updated_at';
+  sortBy: 'name' | 'level' | 'created_at' | 'updated_at';
   sortOrder: 'asc' | 'desc';
 }
 
@@ -67,7 +59,6 @@ const PositionManagement: React.FC = () => {
   
   // Estados
   const [positions, setPositions] = useState<Position[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -79,9 +70,8 @@ const PositionManagement: React.FC = () => {
   // Filtros
   const [filter, setFilter] = useState<PositionFilter>({
     searchText: '',
-    companyId: '',
     status: 'all',
-    sortBy: 'title',
+    sortBy: 'name',
     sortOrder: 'asc'
   });
   
@@ -94,12 +84,9 @@ const PositionManagement: React.FC = () => {
   // Estados de formulario
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',
     description: '',
-    companyId: '',
-    department: '',
-    level: '',
-    requirements: ''
+    level: ''
   });
   
   // Menú de acciones
@@ -120,15 +107,9 @@ const PositionManagement: React.FC = () => {
       if (filter.searchText) {
         const searchLower = filter.searchText.toLowerCase();
         filteredPositions = filteredPositions.filter(position =>
-          position.title.toLowerCase().includes(searchLower) ||
+          position.name?.toLowerCase().includes(searchLower) ||
           position.description?.toLowerCase().includes(searchLower) ||
-          position.department?.toLowerCase().includes(searchLower)
-        );
-      }
-      
-      if (filter.companyId) {
-        filteredPositions = filteredPositions.filter(position => 
-          position.companyId === filter.companyId
+          position.level?.toLowerCase().includes(searchLower)
         );
       }
       
@@ -142,15 +123,13 @@ const PositionManagement: React.FC = () => {
         let valueA: any, valueB: any;
         
         switch (filter.sortBy) {
-          case 'title':
-            valueA = a.title.toLowerCase();
-            valueB = b.title.toLowerCase();
+          case 'name':
+            valueA = (a.name || '').toLowerCase();
+            valueB = (b.name || '').toLowerCase();
             break;
-          case 'company':
-            const companyA = companies.find(c => c.companyId === a.companyId);
-            const companyB = companies.find(c => c.companyId === b.companyId);
-            valueA = companyA?.name.toLowerCase() || '';
-            valueB = companyB?.name.toLowerCase() || '';
+          case 'level':
+            valueA = (a.level || '').toLowerCase();
+            valueB = (b.level || '').toLowerCase();
             break;
           case 'created_at':
             valueA = a.createdAt;
@@ -161,8 +140,8 @@ const PositionManagement: React.FC = () => {
             valueB = b.updatedAt;
             break;
           default:
-            valueA = a.title.toLowerCase();
-            valueB = b.title.toLowerCase();
+            valueA = (a.name || '').toLowerCase();
+            valueB = (b.name || '').toLowerCase();
         }
         
         if (filter.sortOrder === 'asc') {
@@ -188,25 +167,10 @@ const PositionManagement: React.FC = () => {
     }
   };
 
-  const loadCompanies = async () => {
-    try {
-      const result = await getCompanies.execute();
-      setCompanies(result.filter(c => !c.isDeleted));
-    } catch (error) {
-      console.error('Error loading companies:', error);
-    }
-  };
-
   // Efectos
   useEffect(() => {
-    loadCompanies();
-  }, []);
-
-  useEffect(() => {
-    if (companies.length > 0) {
-      loadPositions();
-    }
-  }, [companies, page, rowsPerPage, filter]);
+    loadPositions();
+  }, [page, rowsPerPage, filter]);
 
   // Handlers de paginación
   const handleChangePage = (_event: unknown, newPage: number) => {
@@ -234,12 +198,9 @@ const PositionManagement: React.FC = () => {
   // Handlers de diálogos
   const handleCreateClick = () => {
     setFormData({
-      title: '',
+      name: '',
       description: '',
-      companyId: '',
-      department: '',
-      level: '',
-      requirements: ''
+      level: ''
     });
     setCreateDialogOpen(true);
   };
@@ -247,12 +208,9 @@ const PositionManagement: React.FC = () => {
   const handleEditClick = (position: Position) => {
     setSelectedPosition(position);
     setFormData({
-      title: position.title,
+      name: position.name,
       description: position.description || '',
-      companyId: position.companyId,
-      department: position.department || '',
-      level: position.level || '',
-      requirements: position.requirements || ''
+      level: position.level || ''
     });
     setEditDialogOpen(true);
     handleMenuClose();
@@ -287,34 +245,71 @@ const PositionManagement: React.FC = () => {
 
   const handleCreateSubmit = async () => {
     try {
-      // TODO: Implementar creación de cargo con auditoría
+      if (!user?.id) {
+        showError('Usuario no autenticado');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.name.trim()) {
+        showError('El nombre del cargo es requerido');
+        return;
+      }
+
+      await positionRepository.create({
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        level: formData.level.trim() || undefined
+      }, user.id);
+
       showSuccess('Cargo creado exitosamente');
       setCreateDialogOpen(false);
       loadPositions();
     } catch (error) {
-      showError('Error al crear cargo');
+      showError(error instanceof Error ? error.message : 'Error al crear cargo');
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      // TODO: Implementar edición de cargo con auditoría
+      if (!user?.id || !selectedPosition) {
+        showError('Usuario no autenticado o cargo no seleccionado');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.name.trim()) {
+        showError('El nombre del cargo es requerido');
+        return;
+      }
+
+      await positionRepository.update(selectedPosition.positionId, {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        level: formData.level.trim() || undefined
+      }, user.id);
+
       showSuccess('Cargo actualizado exitosamente');
       setEditDialogOpen(false);
       loadPositions();
     } catch (error) {
-      showError('Error al actualizar cargo');
+      showError(error instanceof Error ? error.message : 'Error al actualizar cargo');
     }
   };
 
   const handleDeleteConfirm = async () => {
     try {
-      // TODO: Implementar eliminación lógica con auditoría
+      if (!user?.id || !selectedPosition) {
+        showError('Usuario no autenticado o cargo no seleccionado');
+        return;
+      }
+
+      await positionRepository.delete(selectedPosition.positionId, user.id);
       showSuccess('Cargo eliminado exitosamente');
       setDeleteDialogOpen(false);
       loadPositions();
     } catch (error) {
-      showError('Error al eliminar cargo');
+      showError(error instanceof Error ? error.message : 'Error al eliminar cargo');
     }
   };
 
@@ -328,10 +323,6 @@ const PositionManagement: React.FC = () => {
     }).format(date);
   };
 
-  const getCompanyName = (companyId: string) => {
-    const company = companies.find(c => c.companyId === companyId);
-    return company ? company.name : 'Empresa no encontrada';
-  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -362,23 +353,6 @@ const PositionManagement: React.FC = () => {
               sx={{ minWidth: 250 }}
             />
             
-            {/* Filtro por empresa */}
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Empresa</InputLabel>
-              <Select
-                value={filter.companyId}
-                label="Empresa"
-                onChange={(e) => handleFilterChange({ companyId: e.target.value })}
-              >
-                <MenuItem value="">Todas las empresas</MenuItem>
-                {companies.map((company) => (
-                  <MenuItem key={company.companyId} value={company.companyId}>
-                    {company.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            
             {/* Filtro de estado */}
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Estado</InputLabel>
@@ -401,8 +375,7 @@ const PositionManagement: React.FC = () => {
                 label="Ordenar por"
                 onChange={(e) => handleFilterChange({ sortBy: e.target.value as any })}
               >
-                <MenuItem value="title">Título</MenuItem>
-                <MenuItem value="company">Empresa</MenuItem>
+                <MenuItem value="name">Nombre</MenuItem>
                 <MenuItem value="created_at">Fecha creación</MenuItem>
                 <MenuItem value="updated_at">Última modificación</MenuItem>
               </Select>
@@ -449,8 +422,7 @@ const PositionManagement: React.FC = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Cargo</TableCell>
-                <TableCell>Empresa</TableCell>
-                <TableCell>Departamento</TableCell>
+                <TableCell>Nivel</TableCell>
                 <TableCell>Estado</TableCell>
                 <TableCell>Última modificación</TableCell>
                 <TableCell align="center">Acciones</TableCell>
@@ -462,35 +434,25 @@ const PositionManagement: React.FC = () => {
                   <TableCell>
                     <Box>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        {position.title}
+                        {position.name}
                       </Typography>
                       {position.description && (
                         <Typography variant="caption" color="text.secondary">
                           {position.description}
                         </Typography>
                       )}
-                      {position.level && (
-                        <Chip 
-                          label={position.level}
-                          size="small"
-                          variant="outlined"
-                          sx={{ mt: 0.5 }}
-                        />
-                      )}
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <BusinessIcon fontSize="small" color="action" />
-                      <Typography variant="body2">
-                        {getCompanyName(position.companyId)}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {position.department || '-'}
-                    </Typography>
+                    {position.level ? (
+                      <Chip 
+                        label={position.level}
+                        size="small"
+                        variant="outlined"
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">-</Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -565,57 +527,25 @@ const PositionManagement: React.FC = () => {
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField
-              label="Título del cargo"
-              value={formData.title}
-              onChange={(e) => handleFormChange('title', e.target.value)}
+              label="Nombre del cargo"
+              value={formData.name}
+              onChange={(e) => handleFormChange('name', e.target.value)}
               required
               fullWidth
             />
             
-            <FormControl fullWidth required>
-              <InputLabel>Empresa</InputLabel>
-              <Select
-                value={formData.companyId}
-                label="Empresa"
-                onChange={(e) => handleFormChange('companyId', e.target.value)}
-              >
-                {companies.map((company) => (
-                  <MenuItem key={company.companyId} value={company.companyId}>
-                    {company.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Departamento"
-                value={formData.department}
-                onChange={(e) => handleFormChange('department', e.target.value)}
-                fullWidth
-              />
-              <TextField
-                label="Nivel"
-                value={formData.level}
-                onChange={(e) => handleFormChange('level', e.target.value)}
-                placeholder="Junior, Senior, Lead, etc."
-                fullWidth
-              />
-            </Box>
+            <TextField
+              label="Nivel"
+              value={formData.level}
+              onChange={(e) => handleFormChange('level', e.target.value)}
+              placeholder="Junior, Senior, Lead, Manager, Director, etc."
+              fullWidth
+            />
             
             <TextField
               label="Descripción"
               value={formData.description}
               onChange={(e) => handleFormChange('description', e.target.value)}
-              multiline
-              rows={3}
-              fullWidth
-            />
-            
-            <TextField
-              label="Requisitos"
-              value={formData.requirements}
-              onChange={(e) => handleFormChange('requirements', e.target.value)}
               multiline
               rows={3}
               fullWidth
@@ -629,7 +559,7 @@ const PositionManagement: React.FC = () => {
           <Button 
             onClick={handleCreateSubmit}
             variant="contained"
-            disabled={!formData.title.trim() || !formData.companyId}
+            disabled={!formData.name.trim()}
           >
             Crear Cargo
           </Button>
@@ -647,57 +577,25 @@ const PositionManagement: React.FC = () => {
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField
-              label="Título del cargo"
-              value={formData.title}
-              onChange={(e) => handleFormChange('title', e.target.value)}
+              label="Nombre del cargo"
+              value={formData.name}
+              onChange={(e) => handleFormChange('name', e.target.value)}
               required
               fullWidth
             />
             
-            <FormControl fullWidth required>
-              <InputLabel>Empresa</InputLabel>
-              <Select
-                value={formData.companyId}
-                label="Empresa"
-                onChange={(e) => handleFormChange('companyId', e.target.value)}
-              >
-                {companies.map((company) => (
-                  <MenuItem key={company.companyId} value={company.companyId}>
-                    {company.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Departamento"
-                value={formData.department}
-                onChange={(e) => handleFormChange('department', e.target.value)}
-                fullWidth
-              />
-              <TextField
-                label="Nivel"
-                value={formData.level}
-                onChange={(e) => handleFormChange('level', e.target.value)}
-                placeholder="Junior, Senior, Lead, etc."
-                fullWidth
-              />
-            </Box>
+            <TextField
+              label="Nivel"
+              value={formData.level}
+              onChange={(e) => handleFormChange('level', e.target.value)}
+              placeholder="Junior, Senior, Lead, Manager, Director, etc."
+              fullWidth
+            />
             
             <TextField
               label="Descripción"
               value={formData.description}
               onChange={(e) => handleFormChange('description', e.target.value)}
-              multiline
-              rows={3}
-              fullWidth
-            />
-            
-            <TextField
-              label="Requisitos"
-              value={formData.requirements}
-              onChange={(e) => handleFormChange('requirements', e.target.value)}
               multiline
               rows={3}
               fullWidth
@@ -711,7 +609,7 @@ const PositionManagement: React.FC = () => {
           <Button 
             onClick={handleEditSubmit}
             variant="contained"
-            disabled={!formData.title.trim() || !formData.companyId}
+            disabled={!formData.name.trim()}
           >
             Guardar Cambios
           </Button>
@@ -729,8 +627,8 @@ const PositionManagement: React.FC = () => {
         <DialogContent>
           <Typography>
             {selectedPosition?.isDeleted 
-              ? `¿Estás seguro que deseas restaurar el cargo "${selectedPosition?.title}"?`
-              : `¿Estás seguro que deseas eliminar el cargo "${selectedPosition?.title}"? Esta acción se puede revertir posteriormente.`
+              ? `¿Estás seguro que deseas restaurar el cargo "${selectedPosition?.name}"?`
+              : `¿Estás seguro que deseas eliminar el cargo "${selectedPosition?.name}"? Esta acción se puede revertir posteriormente.`
             }
           </Typography>
         </DialogContent>
@@ -756,7 +654,7 @@ const PositionManagement: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          Historial de Cambios - {selectedPosition?.title}
+          Historial de Cambios - {selectedPosition?.name}
         </DialogTitle>
         <DialogContent>
           <Alert severity="info">

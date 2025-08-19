@@ -1,30 +1,19 @@
 /**
- * Position entity representing a job position
+ * Position entity representing a job position catalog
+ * This is a standalone catalog, not tied to specific companies or departments
  */
 export interface Position {
   /** Unique position identifier */
   positionId: number;
   
-  /** Position title */
-  title: string;
-  
-  /** Position name (alias for title) */
+  /** Position name/title */
   name: string;
   
   /** Position description */
   description?: string;
   
-  /** Department this position belongs to */
-  department?: string;
-  
-  /** Position level (Junior, Senior, Lead, etc.) */
+  /** Position level (Junior, Senior, Lead, Manager, Director, etc.) */
   level?: string;
-  
-  /** Position requirements */
-  requirements?: string;
-  
-  /** Company this position belongs to */
-  companyId: string;
   
   /** Whether the position is active */
   isActive: boolean;
@@ -52,26 +41,18 @@ export interface Position {
  * Position creation data
  */
 export interface CreatePositionData {
-  title: string;
   name: string;
   description?: string;
-  department?: string;
   level?: string;
-  requirements?: string;
-  companyId: string;
 }
 
 /**
  * Position update data
  */
 export interface UpdatePositionData {
-  title?: string;
   name?: string;
   description?: string;
-  department?: string;
   level?: string;
-  requirements?: string;
-  companyId?: string;
   isActive?: boolean;
   isDeleted?: boolean;
 }

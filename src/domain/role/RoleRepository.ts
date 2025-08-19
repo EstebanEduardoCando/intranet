@@ -1,4 +1,10 @@
 import { Role, UserRole, CreateRoleData, UpdateRoleData } from './Role';
+import { 
+  RoleWithPermissions, 
+  UpdateRolePermissionsData,
+  RoleModulePermission,
+  RoleFunctionPermission
+} from './RolePermission';
 
 /**
  * Repository interface for role operations
@@ -62,4 +68,33 @@ export interface RoleRepository {
    * @returns Promise resolving to boolean indicating success
    */
   removeFromUser(userId: string, roleId: number): Promise<boolean>;
+
+  /**
+   * Find role with complete permissions
+   * @param id Role ID
+   * @returns Promise resolving to RoleWithPermissions or null if not found
+   */
+  findByIdWithPermissions(id: number): Promise<RoleWithPermissions | null>;
+
+  /**
+   * Get module permissions for a role
+   * @param roleId Role ID
+   * @returns Promise resolving to array of module permissions
+   */
+  getModulePermissions(roleId: number): Promise<RoleModulePermission[]>;
+
+  /**
+   * Get function permissions for a role
+   * @param roleId Role ID
+   * @returns Promise resolving to array of function permissions
+   */
+  getFunctionPermissions(roleId: number): Promise<RoleFunctionPermission[]>;
+
+  /**
+   * Update role permissions
+   * @param data Permission update data
+   * @param updatedBy User ID who updates the permissions
+   * @returns Promise resolving to boolean indicating success
+   */
+  updatePermissions(data: UpdateRolePermissionsData, updatedBy?: string): Promise<boolean>;
 }

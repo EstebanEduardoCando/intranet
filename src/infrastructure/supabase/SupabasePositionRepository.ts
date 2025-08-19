@@ -9,8 +9,12 @@ interface PositionRow {
   position_id: number;
   name: string;
   description: string | null;
-  department: string | null;
+  level: string | null;
   is_active: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  version: number;
+  is_deleted: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -25,8 +29,12 @@ export class SupabasePositionRepository implements PositionRepository {
       positionId: row.position_id,
       name: row.name,
       description: row.description || undefined,
-      department: row.department || undefined,
+      level: row.level || undefined,
       isActive: row.is_active,
+      isDeleted: row.is_deleted,
+      version: row.version,
+      createdBy: row.created_by || undefined,
+      updatedBy: row.updated_by || undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     };
@@ -38,6 +46,7 @@ export class SupabasePositionRepository implements PositionRepository {
         .from('positions')
         .select('*')
         .eq('is_active', true)
+        .eq('is_deleted', false)
         .order('name');
 
       if (error) {
@@ -56,6 +65,7 @@ export class SupabasePositionRepository implements PositionRepository {
         .from('positions')
         .select('*')
         .eq('position_id', id)
+        .eq('is_deleted', false)
         .single();
 
       if (error) {
@@ -71,15 +81,19 @@ export class SupabasePositionRepository implements PositionRepository {
     }
   }
 
-  async create(data: CreatePositionData): Promise<Position> {
+  async create(data: CreatePositionData, userId?: string): Promise<Position> {
     try {
       const { data: result, error } = await supabase
         .from('positions')
         .insert({
           name: data.name,
           description: data.description || null,
-          department: data.department || null,
-          is_active: true
+          level: data.level || null,
+          is_active: true,
+          created_by: userId || null,
+          updated_by: userId || null,
+          version: 1,
+          is_deleted: false
         })
         .select()
         .single();
@@ -94,15 +108,16 @@ export class SupabasePositionRepository implements PositionRepository {
     }
   }
 
-  async update(id: number, data: UpdatePositionData): Promise<Position | null> {
+  async update(id: number, data: UpdatePositionData, userId?: string): Promise<Position | null> {
     try {
       const updateData: Partial<PositionRow> = {
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        updated_by: userId || null
       };
 
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description || null;
-      if (data.department !== undefined) updateData.department = data.department || null;
+      if (data.level !== undefined) updateData.level = data.level || null;
       if (data.isActive !== undefined) updateData.is_active = data.isActive;
 
       const { data: result, error } = await supabase
@@ -125,14 +140,16 @@ export class SupabasePositionRepository implements PositionRepository {
     }
   }
 
-  async delete(id: number): Promise<boolean> {
+  async delete(id: number, userId?: string): Promise<boolean> {
     try {
-      // Soft delete by setting is_active to false
+      // Soft delete by setting is_deleted to true
       const { error } = await supabase
         .from('positions')
         .update({ 
+          is_deleted: true,
           is_active: false,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          updated_by: userId || null
         })
         .eq('position_id', id);
 

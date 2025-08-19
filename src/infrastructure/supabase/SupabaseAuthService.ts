@@ -75,86 +75,78 @@ export class SupabaseAuthService implements AuthService {
   }
   
   async register(userData: CreateUserData): Promise<AuthResult> {
+    // Start a transaction-like approach (Supabase doesn't have real transactions for auth + custom tables)
     
-    try {
-      // Start a transaction-like approach (Supabase doesn't have real transactions for auth + custom tables)
-      
-      // 1. First create the auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: {
-            firstName: userData.person.firstName,
-            lastName: userData.person.lastName
-          },
-          emailRedirectTo: `${window.location.origin}/dashboard`
-        }
-      });
-      
-      
-      if (authError) {
-        if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
-          throw new EmailAlreadyInUseError(authError.message, authError);
-        }
-        throw new RegistrationError(authError.message, authError);
+    // 1. First create the auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          firstName: userData.person.firstName,
+          lastName: userData.person.lastName
+        },
+        emailRedirectTo: `${window.location.origin}/dashboard`
       }
-      
-      if (!authData.user) {
-        throw new RegistrationError('Registration failed - no user returned');
+    });
+    
+    
+    if (authError) {
+      if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
+        throw new EmailAlreadyInUseError(authError.message, authError);
       }
-      
-      // Handle case where email confirmation is required
-      if (!authData.session) {
-        throw new RegistrationError(
-          'Cuenta creada exitosamente. Por favor verifica tu email antes de iniciar sesión.'
-        );
-      }
-      
-      // 2. Create person record
-      const person = await this.personRepository.create({
-        firstName: userData.person.firstName,
-        middleName: userData.person.middleName,
-        lastName: userData.person.lastName,
-        secondLastName: userData.person.secondLastName,
-        identityType: userData.person.identityType,
-        identityNumber: userData.person.identityNumber,
-        email: userData.email, // Use the same email as auth
-        phone: userData.person.phone,
-        birthDate: userData.person.birthDate
-      });
-      
-      // 3. Create user profile
-      const userProfile = await this.userProfileRepository.create({
-        userId: authData.user.id,
-        personId: person.personId,
-        username: userData.username,
-        isActive: true,
-        preferences: {}
-      });
-      
-      // 4. Build complete user object
-      const user: User = {
-        id: authData.user.id,
-        email: authData.user.email!,
-        emailVerified: authData.user.email_confirmed_at !== null,
-        profile: userProfile,
-        person: person,
-        roles: []
-      };
-      
-      return {
-        user,
-        accessToken: authData.session.access_token,
-        refreshToken: authData.session.refresh_token,
-        expiresAt: new Date(authData.session.expires_at! * 1000)
-      };
-      
-    } catch (error) {
-      // If any step fails after auth user creation, we should ideally clean up
-      // but Supabase doesn't provide easy rollback for auth users
-      throw error;
+      throw new RegistrationError(authError.message, authError);
     }
+    
+    if (!authData.user) {
+      throw new RegistrationError('Registration failed - no user returned');
+    }
+    
+    // Handle case where email confirmation is required
+    if (!authData.session) {
+      throw new RegistrationError(
+        'Cuenta creada exitosamente. Por favor verifica tu email antes de iniciar sesión.'
+      );
+    }
+    
+    // 2. Create person record
+    const person = await this.personRepository.create({
+      firstName: userData.person.firstName,
+      middleName: userData.person.middleName,
+      lastName: userData.person.lastName,
+      secondLastName: userData.person.secondLastName,
+      identityType: userData.person.identityType,
+      identityNumber: userData.person.identityNumber,
+      email: userData.email, // Use the same email as auth
+      phone: userData.person.phone,
+      birthDate: userData.person.birthDate
+    });
+    
+    // 3. Create user profile
+    const userProfile = await this.userProfileRepository.create({
+      userId: authData.user.id,
+      personId: person.personId,
+      username: userData.username,
+      isActive: true,
+      preferences: {}
+    });
+    
+    // 4. Build complete user object
+    const user: User = {
+      id: authData.user.id,
+      email: authData.user.email!,
+      emailVerified: authData.user.email_confirmed_at !== null,
+      profile: userProfile,
+      person: person,
+      roles: []
+    };
+    
+    return {
+      user,
+      accessToken: authData.session.access_token,
+      refreshToken: authData.session.refresh_token,
+      expiresAt: new Date(authData.session.expires_at! * 1000)
+    };
   }
   
   async logout(): Promise<void> {

@@ -15,6 +15,10 @@ interface CompanyRow {
   website: string | null;
   address: string | null;
   is_active: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  version: number;
+  is_deleted: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -31,11 +35,14 @@ export class SupabaseCompanyRepository implements CompanyRepository {
       name: row.trade_name || row.legal_name, // Use trade_name as display name
       description: row.legal_name, // Use legal_name as description
       isActive: row.is_active,
-      isDeleted: false, // TODO: Add is_deleted field to real schema
+      isDeleted: row.is_deleted,
       address: row.address || undefined,
       phone: row.contact_phone || undefined,
       email: row.contact_email || undefined,
       website: row.website || undefined,
+      version: row.version,
+      createdBy: row.created_by || undefined,
+      updatedBy: row.updated_by || undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     };
@@ -47,6 +54,7 @@ export class SupabaseCompanyRepository implements CompanyRepository {
         .from('companies')
         .select('*')
         .eq('is_active', true)
+        .eq('is_deleted', false)
         .order('trade_name');
 
       if (error) {
@@ -65,6 +73,7 @@ export class SupabaseCompanyRepository implements CompanyRepository {
         .from('companies')
         .select('*')
         .eq('company_id', id)
+        .eq('is_deleted', false)
         .single();
 
       if (error) {
@@ -80,18 +89,23 @@ export class SupabaseCompanyRepository implements CompanyRepository {
     }
   }
 
-  async create(data: CreateCompanyData): Promise<Company> {
+  async create(data: CreateCompanyData, userId?: string): Promise<Company> {
     try {
       const { data: result, error } = await supabase
         .from('companies')
         .insert({
-          legal_name: data.name,
-          trade_name: data.name,
+          legal_name: data.description || data.name, // Use description as legal_name, fallback to name
+          trade_name: data.name, // Display name
           contact_email: data.email || null,
           contact_phone: data.phone || null,
           address: data.address || null,
+          website: data.website || null,
           tax_id: `TAX${Date.now()}`, // Generate temporary tax_id
-          is_active: true
+          is_active: true,
+          created_by: userId || null,
+          updated_by: userId || null,
+          version: 1,
+          is_deleted: false
         })
         .select()
         .single();
@@ -106,19 +120,23 @@ export class SupabaseCompanyRepository implements CompanyRepository {
     }
   }
 
-  async update(id: number, data: UpdateCompanyData): Promise<Company | null> {
+  async update(id: number, data: UpdateCompanyData, userId?: string): Promise<Company | null> {
     try {
       const updateData: Partial<CompanyRow> = {
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        updated_by: userId || null
       };
 
       if (data.name !== undefined) {
         updateData.trade_name = data.name;
-        updateData.legal_name = data.name;
+      }
+      if (data.description !== undefined) {
+        updateData.legal_name = data.description || data.name;
       }
       if (data.address !== undefined) updateData.address = data.address || null;
       if (data.phone !== undefined) updateData.contact_phone = data.phone || null;
       if (data.email !== undefined) updateData.contact_email = data.email || null;
+      if (data.website !== undefined) updateData.website = data.website || null;
       if (data.isActive !== undefined) updateData.is_active = data.isActive;
 
       const { data: result, error } = await supabase
@@ -141,14 +159,16 @@ export class SupabaseCompanyRepository implements CompanyRepository {
     }
   }
 
-  async delete(id: number): Promise<boolean> {
+  async delete(id: number, userId?: string): Promise<boolean> {
     try {
-      // Soft delete by setting is_active to false
+      // Soft delete by setting is_deleted to true
       const { error } = await supabase
         .from('companies')
         .update({ 
+          is_deleted: true,
           is_active: false,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          updated_by: userId || null
         })
         .eq('company_id', id);
 

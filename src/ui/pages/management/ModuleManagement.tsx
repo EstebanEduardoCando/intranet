@@ -457,7 +457,8 @@ const ModuleManagement: React.FC = () => {
     }).format(date);
   };
 
-  const getIconComponent = (iconName: string) => {
+  const getIconComponent = (iconName: string | undefined) => {
+    if (!iconName) return ModuleIcon;
     const icon = AVAILABLE_ICONS.find(i => i.value === iconName);
     return icon ? icon.component : ModuleIcon;
   };

@@ -255,34 +255,77 @@ const CompanyManagement: React.FC = () => {
 
   const handleCreateSubmit = async () => {
     try {
-      // TODO: Implementar creación de empresa con auditoría
+      if (!user?.id) {
+        showError('Usuario no autenticado');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.name.trim()) {
+        showError('El nombre de la empresa es requerido');
+        return;
+      }
+
+      await companyRepository.create({
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        email: formData.email.trim() || undefined,
+        website: formData.website.trim() || undefined
+      }, user.id);
+
       showSuccess('Empresa creada exitosamente');
       setCreateDialogOpen(false);
       loadCompanies();
     } catch (error) {
-      showError('Error al crear empresa');
+      showError(error instanceof Error ? error.message : 'Error al crear empresa');
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      // TODO: Implementar edición de empresa con auditoría
+      if (!user?.id || !selectedCompany) {
+        showError('Usuario no autenticado o empresa no seleccionada');
+        return;
+      }
+
+      // Validar campos requeridos
+      if (!formData.name.trim()) {
+        showError('El nombre de la empresa es requerido');
+        return;
+      }
+
+      await companyRepository.update(selectedCompany.companyId, {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        email: formData.email.trim() || undefined,
+        website: formData.website.trim() || undefined
+      }, user.id);
+
       showSuccess('Empresa actualizada exitosamente');
       setEditDialogOpen(false);
       loadCompanies();
     } catch (error) {
-      showError('Error al actualizar empresa');
+      showError(error instanceof Error ? error.message : 'Error al actualizar empresa');
     }
   };
 
   const handleDeleteConfirm = async () => {
     try {
-      // TODO: Implementar eliminación lógica con auditoría
+      if (!user?.id || !selectedCompany) {
+        showError('Usuario no autenticado o empresa no seleccionada');
+        return;
+      }
+
+      await companyRepository.delete(selectedCompany.companyId, user.id);
       showSuccess('Empresa eliminada exitosamente');
       setDeleteDialogOpen(false);
       loadCompanies();
     } catch (error) {
-      showError('Error al eliminar empresa');
+      showError(error instanceof Error ? error.message : 'Error al eliminar empresa');
     }
   };
 

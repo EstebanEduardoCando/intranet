@@ -25,7 +25,11 @@
       "Bash(cp:*)",
       "Bash(npm run lint)",
       "Bash(npx node:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git config:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": [],
